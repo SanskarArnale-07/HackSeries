@@ -588,7 +588,9 @@ This project was developed by the TRAJACTRA engineering team:
 
 - **Subee2801** ([@Subee2801](https://github.com/Subee2801)) — Project Contributor & Frontend Visualization
 - **Sanskar Arnale** ([@SanskarArnale-07](https://github.com/SanskarArnale-07)) — Project Lead & Astrodynamics Pipeline
-- **Srushti** ([@Srushti07-del](https://github.com/Srushti07-del)) — Data Ingestion & Integration
+- **Srushti** ([@Srushti07-del](https://github.com/Srushti07-del)) — Frontend visualization
+-  **Sarthak Dhawas** ([@Sarthak.dhawas18](https://github.com/Sarthak-dhawas)) — Data Ingestion & Integration
+-   **Prathmesh Pawar** ([@PrathmeshVPawar](https://github.com/PrathmeshVPawar)) — Data Ingestion & Integration
 
 ---
 
