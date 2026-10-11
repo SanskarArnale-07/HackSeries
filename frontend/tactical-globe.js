@@ -494,7 +494,7 @@
       this.R = 215;
 
       const html = `
-        <div class="tactical-globe-wrapper" style="position:relative; width:100%; max-width:620px; margin:0 auto; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;">
+        <div class="tactical-globe-wrapper" style="position:relative; width:100%; max-width:min(100%, 85vh, 960px); margin:0 auto; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;">
           <svg class="tactical-globe-svg" id="${uid}_svg" viewBox="0 0 ${size} ${size}" preserveAspectRatio="xMidYMid meet"
             style="display:block; width:100%; height:100%; aspect-ratio:1/1; cursor:grab; user-select:none; touch-action:none; background:#020617;">
             <defs>

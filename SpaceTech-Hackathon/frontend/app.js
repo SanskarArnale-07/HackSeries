@@ -76,7 +76,7 @@ function showPage(name) {
   document.getElementById('breadcrumb').textContent = page.label;
   document.getElementById('page-title').textContent = page.title;
   document.getElementById('page-description').textContent = page.description;
-  
+
   const contentEl = document.getElementById('page-content');
   // Reset and trigger smooth animation on tab switch
   contentEl.style.animation = 'none';
