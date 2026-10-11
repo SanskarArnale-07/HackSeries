@@ -60,7 +60,6 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
     }
   };
 
-<<<<<<< HEAD
   const isSimulated = event ? isSyntheticEvent(event) : isSyntheticObject(selectedCatalogObject);
 
   // Check if primary and secondary objects are co-orbital
@@ -71,10 +70,6 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
     Math.abs(primaryObject.orbital_parameters.eccentricity - secondaryObject.orbital_parameters.eccentricity) < 0.001 &&
     Math.abs(primaryObject.orbital_parameters.perigee_altitude_km - secondaryObject.orbital_parameters.perigee_altitude_km) < 1.0
   );
-=======
-
-
->>>>>>> 15183ce08edcd8d13d9bdbba3bd0cb7ff47e1d58
 
   return (
     <aside className="w-84 md:w-96 bg-[#080d18] border-l border-[#141f33] flex flex-col select-none overflow-y-auto h-full flex-shrink-0 z-20 font-sans">
