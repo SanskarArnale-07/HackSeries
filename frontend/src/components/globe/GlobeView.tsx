@@ -6,7 +6,7 @@ import worldLandData from '../../assets/world-land.json';
 import type { ConjunctionEvent, EphemerisTrajectory } from '../../api/types';
 
 const EARTH_RADIUS_KM = 6378.137;
-const SPHERE_RADIUS = 2.15;
+const SPHERE_RADIUS = 2.25;
 
 function latLonToVector3(lat: number, lon: number, altKm = 0, radiusBase = SPHERE_RADIUS): THREE.Vector3 {
   const r = radiusBase * (1.0 + altKm / EARTH_RADIUS_KM);
@@ -78,7 +78,7 @@ function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
 
   return (
     <group>
-      {/* 1. Pure-black Earth Core (no textures, no atmospheric glow) */}
+      {/* 1. Pure-black Earth Core (no daytime imagery, no atmospheric glow) */}
       <mesh>
         <sphereGeometry args={[SPHERE_RADIUS, 64, 64]} />
         <meshBasicMaterial color="#000000" />
@@ -87,7 +87,7 @@ function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
       {/* 2. Equator reference ring */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[SPHERE_RADIUS * 1.001, SPHERE_RADIUS * 1.0025, 64]} />
-        <meshBasicMaterial color="#161e2a" side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#141f33" side={THREE.DoubleSide} />
       </mesh>
 
       {/* 3. Subtle dark-gray continent outlines from Natural Earth vector */}
@@ -96,8 +96,8 @@ function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
           <ThreeLine
             key={`coastline-${i}`}
             points={pts}
-            color="#323c4d"
-            opacity={0.8}
+            color="#2f3d52"
+            opacity={0.85}
           />
         ))}
     </group>
@@ -134,7 +134,7 @@ function SatelliteMarker({
   lon,
   altKm,
   color,
-  size = 0.025,
+  size = 0.024,
   isHighlighted = false
 }: {
   lat: number;
@@ -152,13 +152,13 @@ function SatelliteMarker({
         <sphereGeometry args={[size, 16, 16]} />
         <meshBasicMaterial color={color} />
       </mesh>
-      {/* Soft halo */}
+      {/* Restrained soft halo */}
       <mesh>
-        <sphereGeometry args={[size * (isHighlighted ? 2.2 : 1.5), 16, 16]} />
+        <sphereGeometry args={[size * (isHighlighted ? 2.0 : 1.4), 16, 16]} />
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={isHighlighted ? 0.4 : 0.15}
+          opacity={isHighlighted ? 0.35 : 0.12}
         />
       </mesh>
     </group>
@@ -191,7 +191,7 @@ function EncounterBeacon({
 
   useFrame(({ clock }) => {
     if (ringRef.current) {
-      const scale = 1.0 + Math.sin(clock.getElapsedTime() * 3.0) * 0.3;
+      const scale = 1.0 + Math.sin(clock.getElapsedTime() * 3.0) * 0.25;
       ringRef.current.scale.set(scale, scale, scale);
     }
   });
@@ -203,7 +203,7 @@ function EncounterBeacon({
         <meshBasicMaterial color={beaconColor} />
       </mesh>
       <mesh ref={ringRef}>
-        <sphereGeometry args={[0.09, 16, 16]} />
+        <sphereGeometry args={[0.085, 16, 16]} />
         <meshBasicMaterial color={beaconColor} transparent opacity={0.3} wireframe />
       </mesh>
     </group>
@@ -242,15 +242,15 @@ export function GlobeView({
   }, [selectedEvent]);
 
   return (
-    <div className="w-full h-full relative bg-[#000000]">
+    <div className="w-full h-full relative bg-[#070b14]">
       <Canvas
-        camera={{ position: [0, 1.6, 3.7], fov: 40 }}
-        style={{ background: '#000000' }}
+        camera={{ position: [0, 0.7, 3.5], fov: 38 }}
+        style={{ background: '#070b14' }}
       >
-        <color attach="background" args={['#000000']} />
-        <ambientLight intensity={0.4} />
+        <color attach="background" args={['#070b14']} />
+        <ambientLight intensity={0.45} />
 
-        {/* Pure-black globe with legitimate continent outlines */}
+        {/* Pure-black Earth globe with vector continent outlines */}
         <PureBlackEarth showOutlines={showOutlines} />
 
         {/* Background constellation satellites */}
@@ -270,7 +270,7 @@ export function GlobeView({
               lon={sat.lon}
               altKm={sat.alt}
               color={color}
-              size={isPrimary || isSecondary ? 0.04 : 0.02}
+              size={isPrimary || isSecondary ? 0.038 : 0.02}
               isHighlighted={isPrimary || isSecondary}
             />
           );
@@ -281,14 +281,14 @@ export function GlobeView({
           <TrajectoryLine
             trajectory={primaryTrajectory}
             color="#00e5ff"
-            opacity={0.9}
+            opacity={0.92}
           />
         )}
         {showOrbits && secondaryTrajectory && (
           <TrajectoryLine
             trajectory={secondaryTrajectory}
             color={secondaryColor}
-            opacity={0.85}
+            opacity={0.88}
           />
         )}
 
@@ -306,14 +306,14 @@ export function GlobeView({
           enableDamping
           dampingFactor={0.05}
           rotateSpeed={0.7}
-          minDistance={2.4}
-          maxDistance={9.0}
+          minDistance={2.5}
+          maxDistance={8.5}
         />
       </Canvas>
 
-      {/* Minimal, non-intrusive geocentric reference tag */}
-      <div className="absolute top-4 left-4 pointer-events-none text-xs text-[#64748b] bg-[#06080c]/80 px-2.5 py-1 rounded backdrop-blur-sm border border-[#141a26]">
-        TEME Inertial &bull; WGS-84 Coastlines
+      {/* Discreet Coordinate Frame Identifier */}
+      <div className="absolute top-3.5 left-4 pointer-events-none text-[11px] font-mono text-[#64748b] bg-[#090e18]/85 px-2.5 py-1 rounded backdrop-blur-md border border-[#172236]">
+        TEME Inertial Frame &bull; WGS-84 Coastlines
       </div>
     </div>
   );

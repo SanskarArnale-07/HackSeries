@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { OrbitalObject } from '../../api/types';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 interface CatalogViewProps {
   objects: OrbitalObject[];
@@ -29,40 +29,50 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
   }, [objects, searchTerm]);
 
   return (
-    <div className="flex flex-col h-full bg-[#06080c] select-none">
+    <div className="flex flex-col h-full bg-[#0a0f1a] select-none border-r border-[#172236]">
       {/* Search Header */}
-      <div className="p-4 border-b border-[#141a26] space-y-2.5">
+      <div className="p-3.5 border-b border-[#172236] bg-[#0c1220] space-y-2.5 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold tracking-wider uppercase text-[#f8fafc]">
-            Orbital Catalog
-          </h2>
-          <span className="text-xs font-mono text-[#64748b]">
-            {filteredObjects.length} / {objects.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#f8fafc]">
+              Catalog Objects
+            </span>
+            <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-[#131d2e] text-[#94a3b8] border border-[#1b283f]">
+              {filteredObjects.length} / {objects.length}
+            </span>
+          </div>
         </div>
 
         <div className="relative">
-          <Search className="w-3.5 h-3.5 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-[#64748b] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search satellite or NORAD..."
-            className="w-full bg-[#0a0e14] border border-[#141a26] rounded pl-8 pr-3 py-1.5 text-xs text-[#f8fafc] placeholder-[#64748b] focus:outline-none focus:border-[#00e5ff]/40 transition-colors"
+            placeholder="Search satellite name or NORAD..."
+            className="w-full bg-[#070b14] border border-[#172236] focus:border-[#00e5ff]/50 rounded pl-8 pr-7 py-1.5 text-xs text-[#f8fafc] placeholder-[#64748b] outline-none transition-colors font-sans"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[#64748b] hover:text-[#f8fafc] cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Catalog List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-[#10141e]">
+      <div className="flex-1 overflow-y-auto divide-y divide-[#131d2e]">
         {isLoading ? (
-          <div className="p-8 text-center text-xs text-[#64748b] flex flex-col items-center gap-2">
-            <div className="w-4 h-4 border-2 border-[#00e5ff] border-t-transparent rounded-full animate-spin" />
+          <div className="p-10 text-center text-xs text-[#64748b] flex flex-col items-center gap-2.5">
+            <div className="w-5 h-5 border-2 border-[#00e5ff] border-t-transparent rounded-full animate-spin" />
             <span>Loading satellite catalog...</span>
           </div>
         ) : filteredObjects.length === 0 ? (
           <div className="p-8 text-center text-xs text-[#64748b]">
-            No satellites match search.
+            No tracked satellites match search.
           </div>
         ) : (
           filteredObjects.map((obj) => {
@@ -72,22 +82,22 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               <div
                 key={obj.norad_id}
                 onClick={() => onSelectObject(obj)}
-                className={`p-3.5 cursor-pointer transition-colors ${
+                className={`p-3 cursor-pointer transition-all ${
                   isSelected
-                    ? 'bg-[#0e1420] border-l-2 border-[#00e5ff]'
-                    : 'hover:bg-[#090d14]'
+                    ? 'bg-[#121c2e] border-l-2 border-[#00e5ff] shadow-[inset_0_0_15px_rgba(0,229,255,0.05)]'
+                    : 'hover:bg-[#0e1625] border-l-2 border-transparent'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-semibold text-xs text-[#f8fafc] truncate max-w-[200px]" title={obj.name}>
                     {obj.name}
                   </span>
-                  <span className="font-mono text-xs text-[#00e5ff]">
+                  <span className="font-mono text-xs font-semibold text-[#00e5ff]">
                     #{obj.norad_id}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-[#64748b] font-mono">
+                <div className="flex items-center justify-between text-[11px] text-[#64748b] font-mono">
                   <span>{obj.object_type}</span>
                   <span>Inc: {obj.orbital_parameters.inclination_deg}&deg; &bull; Alt: {obj.orbital_parameters.perigee_altitude_km} km</span>
                 </div>

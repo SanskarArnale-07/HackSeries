@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --bg-space: #000000;
-  --bg-base: #06080c;
-  --bg-surface: #0a0d14;
-  --bg-elevated: #101522;
-  --bg-highlight: #161e2e;
+  /* Deep Space Navy Design System */
+  --bg-space: #070b14;
+  --bg-base: #070b14;
+  --bg-surface: #0b111e;
+  --bg-card: #0e1524;
+  --bg-elevated: #131c2e;
+  --bg-highlight: #19243a;
   
-  --border-subtle: #1c2436;
+  --border-subtle: #172236;
+  --border-light: #22304a;
   --border-focus: #00e5ff;
   
   --text-main: #f8fafc;
@@ -15,6 +18,7 @@
   --text-dim: #64748b;
   
   --cyan-accent: #00e5ff;
+  --cyan-glow: rgba(0, 229, 255, 0.15);
   --amber-accent: #f59e0b;
   --red-accent: #ef4444;
   --green-accent: #10b981;
@@ -42,18 +46,18 @@ code, pre, .font-mono {
   font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* Custom scrollbars */
+/* Aerospace Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #080b10;
+  background: #090e18;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e2638;
-  border-radius: 3px;
+  background: #1b263b;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2b364e;
+  background: #2a3b5a;
 }
