@@ -512,6 +512,7 @@ function buildTrajectoryPath(
 export interface TacticalGlobeMarker {
   id: string | number;
   label: string;
+  showLabel?: boolean;
   description?: string;
   latitude: number;
   longitude: number;
@@ -1110,12 +1111,12 @@ export const TacticalGlobe3D: React.FC<TacticalGlobeProps> = ({
           <radialGradient id={gAtm} cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor={rgba(glowColor, 0)} />
             <stop
-              offset={(R / Math.max(R + 60, 1) * 100).toFixed(1) + '%'}
+              offset={(R / Math.max(R + 14, 1) * 100).toFixed(1) + '%'}
               stopColor={rgba(glowColor, 0)}
             />
             <stop
-              offset={((R + 6) / Math.max(R + 60, 1) * 100).toFixed(1) + '%'}
-              stopColor={rgba(glowColor, 0.4 * glowIntensity)}
+              offset={((R + 2) / Math.max(R + 14, 1) * 100).toFixed(1) + '%'}
+              stopColor={rgba(glowColor, 0.22 * glowIntensity)}
             />
             <stop offset="100%" stopColor={rgba(glowColor, 0)} />
           </radialGradient>
@@ -1143,8 +1144,8 @@ export const TacticalGlobe3D: React.FC<TacticalGlobeProps> = ({
             />
           ))}
 
-        {/* 2. Atmospheric Outer Glow */}
-        <circle cx={cx} cy={cy} r={R + 60} fill={`url(#${gAtm})`} pointerEvents="none" />
+        {/* 2. Atmospheric Outer Glow (Subtle limb scattering) */}
+        <circle cx={cx} cy={cy} r={R + 14} fill={`url(#${gAtm})`} pointerEvents="none" />
 
         {/* 3. Base Ocean Sphere */}
         <circle cx={cx} cy={cy} r={R} fill={oceanColor} />
@@ -1228,15 +1229,15 @@ export const TacticalGlobe3D: React.FC<TacticalGlobeProps> = ({
           cy={cy}
           r={R}
           fill="none"
-          stroke={rgba(glowColor, 0.45 * glowIntensity)}
-          strokeWidth={1.2}
+          stroke={rgba(glowColor, 0.25 * glowIntensity)}
+          strokeWidth={0.8}
           pointerEvents="none"
         />
 
         {/* 6. Orbital & Conjunction Markers */}
         {markers.map((m, i) => {
-          const sz = m.size || 5;
-          const col = m.color || '#00f0ff';
+          const sz = m.size || 4;
+          const col = m.color || '#38bdf8';
           const isPulsing = m.isPulsing !== false;
 
           return (
@@ -1256,12 +1257,12 @@ export const TacticalGlobe3D: React.FC<TacticalGlobeProps> = ({
               {isPulsing && (
                 <circle
                   className={m.objectType === 'CONJUNCTION' ? 'mm-pulse-fast' : 'mm-pulse'}
-                  r={sz * (m.objectType === 'CONJUNCTION' ? 2.5 : 1.6)}
-                  fill={rgba(col, m.objectType === 'CONJUNCTION' ? 0.7 : 0.4)}
+                  r={sz * (m.objectType === 'CONJUNCTION' ? 2.2 : 1.5)}
+                  fill={rgba(col, m.objectType === 'CONJUNCTION' ? 0.5 : 0.25)}
                 />
               )}
               {/* Secondary Halo */}
-              <circle r={sz * 2.2} fill={rgba(col, 0.16)} />
+              <circle r={sz * 1.8} fill={rgba(col, 0.12)} />
               {/* Core Marker Point */}
               <circle r={sz} fill={col} stroke="#05070a" strokeWidth={1} />
               {/* Specular Highlight dot */}
@@ -1272,15 +1273,15 @@ export const TacticalGlobe3D: React.FC<TacticalGlobeProps> = ({
                 fill={rgba('#ffffff', 0.65)}
               />
 
-              {/* Marker Label */}
-              {m.label && (
+              {/* Marker Label — Only displayed when showLabel is true to prevent text collisions */}
+              {m.showLabel && m.label && (
                 <text
                   x={sz * 2.2}
                   y={sz * 0.35 + 1}
-                  fill="#f0f4f8"
+                  fill="#f1f5f9"
                   fontSize={10}
                   fontWeight={600}
-                  letterSpacing="0.04em"
+                  letterSpacing="0.03em"
                   stroke={oceanColor}
                   strokeWidth={3}
                   strokeLinejoin="round"

@@ -7,6 +7,9 @@ export type DashboardTab = 'overview' | 'catalog';
 interface HeaderProps {
   activeTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
+  onOpenWeather: () => void;
+  onOpenModel: () => void;
+  onOpenReports: () => void;
   health: HealthResponse | null;
   onRefresh: () => void;
   isRefreshing: boolean;
@@ -16,6 +19,9 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
+  onOpenWeather,
+  onOpenModel,
+  onOpenReports,
   health,
   onRefresh,
   isRefreshing,
@@ -27,9 +33,9 @@ export const Header: React.FC<HeaderProps> = ({
   const sourceLabel = isLive && !isOffline ? 'Live CelesTrak' : 'Local Snapshot';
 
   return (
-    <header className="h-13 border-b border-[#172236] bg-[#090e18] px-5 flex items-center justify-between select-none z-20 flex-shrink-0">
+    <header className="h-12 border-b border-[#141f33] bg-[#070b16] px-6 flex items-center justify-between select-none z-20 flex-shrink-0">
       {/* Left: Brand Identity & Navigation */}
-      <div className="flex items-center gap-7">
+      <div className="flex items-center gap-6">
         <div
           onClick={onNavigateHome}
           className={`flex items-center gap-2.5 ${
@@ -37,46 +43,65 @@ export const Header: React.FC<HeaderProps> = ({
           }`}
           title={onNavigateHome ? 'Return to Cinematic Landing' : undefined}
         >
-          <div className="w-7 h-7 rounded bg-[#10192a] border border-[#1b283f] flex items-center justify-center transition-colors group-hover:border-[#00e5ff]/40">
-            <Satellite className="w-3.5 h-3.5 text-[#00e5ff]" />
+          <div className="w-6.5 h-6.5 rounded bg-[#0f1728] border border-[#1b2842] flex items-center justify-center transition-colors group-hover:border-[#38bdf8]/50">
+            <Satellite className="w-3.5 h-3.5 text-[#38bdf8]" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono font-bold tracking-wider text-sm text-[#f8fafc] group-hover:text-white transition-colors">
-                TRAJACTRA
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#00e5ff]/10 text-[#00e5ff] border border-[#00e5ff]/25 font-semibold">
-                SSA
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-bold tracking-wider text-sm text-[#f1f5f9] group-hover:text-white transition-colors">
+              TRAJACTRA
+            </span>
+            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#131d2e] text-[#94a3b8] border border-[#1b283f] font-semibold">
+              SSA
+            </span>
           </div>
         </div>
 
-        <div className="h-4 w-[1px] bg-[#1a253a] hidden sm:block" />
+        <div className="h-4 w-[1px] bg-[#162238] hidden sm:block" />
 
         {/* View Switcher Tabs */}
-        <nav className="flex items-center gap-1.5">
+        <nav className="flex items-center gap-1">
           <button
             onClick={() => onTabChange('overview')}
-            className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'overview'
-                ? 'text-[#00e5ff] bg-[#121c2e] border border-[#00e5ff]/30 shadow-[0_0_12px_rgba(0,229,255,0.1)]'
-                : 'text-[#94a3b8] hover:text-[#f8fafc] hover:bg-[#0e1626] border border-transparent'
+                ? 'text-[#f1f5f9] bg-[#10192a] border border-[#1e2d48]'
+                : 'text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent'
             }`}
           >
-            <Compass className="w-3.5 h-3.5" />
+            <Compass className="w-3.5 h-3.5 text-[#38bdf8]" />
             <span>Overview</span>
           </button>
           <button
             onClick={() => onTabChange('catalog')}
-            className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'catalog'
-                ? 'text-[#00e5ff] bg-[#121c2e] border border-[#00e5ff]/30 shadow-[0_0_12px_rgba(0,229,255,0.1)]'
-                : 'text-[#94a3b8] hover:text-[#f8fafc] hover:bg-[#0e1626] border border-transparent'
+                ? 'text-[#f1f5f9] bg-[#10192a] border border-[#1e2d48]'
+                : 'text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent'
             }`}
           >
-            <Database className="w-3.5 h-3.5" />
+            <Database className="w-3.5 h-3.5 text-[#38bdf8]" />
             <span>Catalog</span>
+          </button>
+          <button
+            onClick={onOpenWeather}
+            className="px-2.5 py-1 rounded text-xs font-medium text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            title="View NOAA SWPC Space Weather Environment"
+          >
+            <span>Space Weather</span>
+          </button>
+          <button
+            onClick={onOpenModel}
+            className="px-2.5 py-1 rounded text-xs font-medium text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            title="View SGP4 Astrodynamics Engine Architecture"
+          >
+            <span>Engine</span>
+          </button>
+          <button
+            onClick={onOpenReports}
+            className="px-2.5 py-1 rounded text-xs font-medium text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            title="View Conjunction Screening Audit Report"
+          >
+            <span>Reports</span>
           </button>
         </nav>
       </div>
@@ -85,17 +110,17 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-3">
         {/* Aerospace Data Status Pill */}
         <div
-          className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#0d1422] border border-[#1a263c] text-xs cursor-help"
+          className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#0b101c] border border-[#152238] text-xs cursor-help"
           title={`Active Data Feed: ${rawSource}\nTimeout: 2.5s | Fallback: data/fixtures/celestrak_snapshot.txt`}
         >
           <span
             className={`w-2 h-2 rounded-full ${
               isLive && !isOffline
-                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
-                : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
+                ? 'bg-emerald-400'
+                : 'bg-amber-400'
             }`}
           />
-          <span className="text-[11px] font-mono text-[#cbd5e1] font-medium tracking-tight">
+          <span className="text-[11px] font-mono text-[#94a3b8] font-medium tracking-tight">
             {sourceLabel}
           </span>
         </div>
@@ -104,12 +129,12 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onRefresh}
           disabled={isRefreshing}
-          className="p-1.5 rounded bg-[#0d1422] hover:bg-[#141f33] border border-[#1a263c] hover:border-[#00e5ff]/30 text-[#94a3b8] hover:text-[#00e5ff] transition-all disabled:opacity-50 cursor-pointer"
+          className="p-1.5 rounded bg-[#0b101c] hover:bg-[#121c2e] border border-[#152238] hover:border-[#38bdf8]/40 text-[#94a3b8] hover:text-[#f1f5f9] transition-all disabled:opacity-50 cursor-pointer"
           title="Refresh screening pipeline"
           aria-label="Refresh data"
         >
           <RefreshCw
-            className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#00e5ff]' : ''}`}
+            className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#38bdf8]' : ''}`}
           />
         </button>
       </div>
