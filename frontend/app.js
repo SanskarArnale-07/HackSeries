@@ -88,42 +88,67 @@ function getOverviewContent() {
   const isErr = Boolean(appState.error);
   const isLoading = appState.isLoading;
 
-  const objVal = isErr ? '—' : isLoading ? '...' : (appState.objects.length || 0);
-  const conjVal = isErr ? '—' : isLoading ? '...' : (appState.events.length || 0);
-  const dataVal = isErr ? 'DISCONNECTED' : isLoading ? '...' : (appState.health?.data_source || 'ONLINE');
-  const modelVal = isErr ? 'OFFLINE' : isLoading ? '...' : 'SGP4 ACTIVE';
+  const objCount = isErr ? 0 : (appState.objects?.length || 0);
+  const conjCount = isErr ? 0 : (appState.events?.length || 0);
 
-  const objSub = isErr ? 'Service unavailable' : `${appState.objects.length} LEO records loaded`;
-  const conjSub = isErr ? 'Service unavailable' : `${appState.events.length} candidate close approaches`;
-  const dataSub = isErr ? 'Backend unreachable' : (appState.health?.is_offline_mode ? 'Offline fixture snapshot' : 'CelesTrak telemetry active');
-  const modelSub = isErr ? 'Backend unreachable' : 'TEME / Golden-section search';
+  // Honest data source status
+  let dataSourceStatus = 'Local Cache';
+  if (isErr) {
+    dataSourceStatus = 'Service Offline';
+  } else if (appState.health?.is_offline_mode) {
+    dataSourceStatus = 'Offline Fixtures';
+  } else if (appState.health?.data_source) {
+    const ds = String(appState.health.data_source);
+    if (ds === 'LOCAL_CACHE') dataSourceStatus = 'Local Cache';
+    else if (ds.includes('LIVE')) dataSourceStatus = 'Live CelesTrak';
+    else dataSourceStatus = ds;
+  }
+
+  // Propagation model status
+  let modelStatus = 'Analytical SGP4 / TEME';
+  if (isErr) {
+    modelStatus = 'Model Inactive';
+  } else if (appState.health?.screening_engine_status) {
+    modelStatus = `SGP4 Engine (${appState.health.screening_engine_status})`;
+  }
+
+  const isEmpty = !isErr && !isLoading && conjCount === 0;
+
+  const alertIconSvg = isEmpty
+    ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`
+    : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+
+  const alertTitle = isErr
+    ? `<span class="alert-count">—</span> Candidate Conjunctions (Engine Offline)`
+    : isLoading
+    ? `Scanning Conjunction Candidates...`
+    : isEmpty
+    ? `<span class="alert-count">0</span> Candidate Conjunctions`
+    : `<span class="alert-count">${conjCount}</span> Candidate Conjunctions`;
+
+  const supportingText = isErr
+    ? `Backend unavailable · Data offline`
+    : `<span>${objCount} Tracked Objects</span><span class="separator">·</span><span>${escapeHtml(dataSourceStatus)}</span><span class="separator">·</span><span>${escapeHtml(modelStatus)}</span>`;
+
+  const bannerClass = `conjunction-alert-banner${isEmpty ? ' banner-empty' : ''}`;
 
   const feedObjStatus = isErr ? '<em>OFFLINE</em>' : `<em>CONNECTED (${appState.objects.length} OBJS)</em>`;
   const feedWeatherStatus = isErr ? '<em>OFFLINE</em>' : `<em>ONLINE (${appState.weather?.f107_flux ? Math.round(appState.weather.f107_flux) + ' SFU' : 'ACTIVE'})</em>`;
   const feedScreeningStatus = isErr ? '<em>OFFLINE</em>' : `<em>SCREENING (${appState.events.length} EVENTS)</em>`;
 
   return `
-    <div class="metric-grid">
-      <article class="metric metric-cyan">
-        <div class="metric-top"><span class="metric-icon">◉</span><span>TRACKED OBJECTS</span></div>
-        <b>${objVal}</b>
-        <small>${objSub}</small>
-      </article>
-      <article class="metric metric-danger">
-        <div class="metric-top"><span class="metric-icon">⌁</span><span>CONJUNCTIONS</span></div>
-        <b>${conjVal}</b>
-        <small>${conjSub}</small>
-      </article>
-      <article class="metric metric-success">
-        <div class="metric-top"><span class="metric-icon">☼</span><span>DATA FEEDS</span></div>
-        <b style="font-size:18px;">${dataVal}</b>
-        <small>${dataSub}</small>
-      </article>
-      <article class="metric metric-purple">
-        <div class="metric-top"><span class="metric-icon">⌘</span><span>MODEL STATUS</span></div>
-        <b style="font-size:18px;">${modelVal}</b>
-        <small>${modelSub}</small>
-      </article>
+    <div class="${bannerClass}">
+      <div class="alert-banner-left">
+        <span class="alert-banner-icon" aria-hidden="true">${alertIconSvg}</span>
+        <div class="alert-banner-text">
+          <div class="alert-banner-title">${alertTitle}</div>
+          <div class="alert-banner-sub">${supportingText}</div>
+        </div>
+      </div>
+      <button class="alert-banner-action" data-page="conjunctions" type="button" aria-label="View Conjunctions">
+        <span>View Conjunctions</span>
+        <span class="arrow-icon" aria-hidden="true">→</span>
+      </button>
     </div>
     <section class="panel tactical-globe-panel">
       <div class="panel-head">
