@@ -64,14 +64,40 @@ def main():
         env=env
     )
 
+    # Ensure Windows PATH includes Node.js even if launched from a pre-install shell
+    if sys.platform == "win32":
+        extra_paths = []
+        default_node = Path("C:/Program Files/nodejs")
+        if default_node.exists():
+            extra_paths.append(str(default_node))
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment") as k:
+                extra_paths.append(winreg.QueryValueEx(k, "Path")[0])
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment") as k:
+                extra_paths.append(winreg.QueryValueEx(k, "Path")[0])
+        except Exception:
+            pass
+        if extra_paths:
+            env["PATH"] = ";".join(extra_paths) + ";" + env.get("PATH", "")
+            os.environ["PATH"] = env["PATH"]
+
     # Start Vite Frontend
-    npm_cmd = "npm.cmd" if sys.platform == "win32" else "npm"
+    import shutil
+    npm_path = shutil.which("npm.cmd") or shutil.which("npm")
+    if not npm_path and sys.platform == "win32":
+        default_npm = Path("C:/Program Files/nodejs/npm.cmd")
+        if default_npm.exists():
+            npm_path = str(default_npm)
+
+    npm_cmd = npm_path or ("npm.cmd" if sys.platform == "win32" else "npm")
     frontend_cmd = [npm_cmd, "run", "dev", "--", "--port", "3000"]
 
     frontend_proc = subprocess.Popen(
         frontend_cmd,
         cwd=str(frontend_dir),
-        env=env
+        env=env,
+        shell=(sys.platform == "win32")
     )
 
     try:

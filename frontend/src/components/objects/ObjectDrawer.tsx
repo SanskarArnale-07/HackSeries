@@ -60,6 +60,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
     }
   };
 
+<<<<<<< HEAD
   const isSimulated = event ? isSyntheticEvent(event) : isSyntheticObject(selectedCatalogObject);
 
   // Check if primary and secondary objects are co-orbital
@@ -70,6 +71,10 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
       Math.abs(primaryObject.orbital_parameters.eccentricity - secondaryObject.orbital_parameters.eccentricity) < 0.001 &&
       Math.abs(primaryObject.orbital_parameters.perigee_altitude_km - secondaryObject.orbital_parameters.perigee_altitude_km) < 1.0
   );
+=======
+
+
+>>>>>>> 15183ce08edcd8d13d9bdbba3bd0cb7ff47e1d58
 
   return (
     <aside className="w-84 md:w-96 bg-[#080d18] border-l border-[#141f33] flex flex-col select-none overflow-y-auto h-full flex-shrink-0 z-20 font-sans">
@@ -258,6 +263,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                     </div>
                   </div>
 
+<<<<<<< HEAD
                   {/* Primary Keplerian Orbital Elements */}
                   {primaryObject && (
                     <div className="p-3 rounded bg-[#080d1a] border border-[#141f33] space-y-1">
@@ -325,6 +331,139 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                 </div>
               )}
             </div>
+=======
+<<<<<<< HEAD
+                  {/* Primary Object Card */}
+                  <div className="p-3 rounded bg-[#0e1218] border border-white/10 space-y-1.5">
+                    <div className="flex items-center justify-between text-[#00f0ff] font-semibold text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <Orbit className="w-3.5 h-3.5" />
+                        PRIMARY OBJECT
+                      </div>
+                      <span className="text-[10px] text-[#8a99ad]">
+                        NORAD {event.primary_object.norad_id}
+                      </span>
+                    </div>
+                    <div className="font-bold text-[#f0f4f8] text-xs">{event.primary_object.name}</div>
+                    <div className="text-[10px] text-[#8a99ad]">TYPE: {event.primary_object.type}</div>
+
+                    {primaryObject ? (
+                      <div className="grid grid-cols-2 gap-1 text-[10px] pt-1.5 border-t border-white/5 text-[#8a99ad]">
+                        <div>Inc: {primaryObject.orbital_parameters.inclination_deg}&deg;</div>
+                        <div>Ecc: {primaryObject.orbital_parameters.eccentricity}</div>
+                        <div>Perigee: {primaryObject.orbital_parameters.perigee_altitude_km} km</div>
+                        <div>Apogee: {primaryObject.orbital_parameters.apogee_altitude_km} km</div>
+                        <div className="col-span-2 text-[9px] text-emerald-400/90 pt-0.5 font-semibold">
+                          ✓ SGP4 Propagated Trajectory Active on Globe
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-amber-400/80 pt-1 border-t border-white/5">
+                        Accurate geodetic position unavailable (unpropagated)
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Secondary Object Card */}
+                  <div className="p-3 rounded bg-[#0e1218] border border-white/10 space-y-1.5">
+                    <div className="flex items-center justify-between text-[#94a3b8] font-semibold text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <Orbit className="w-3.5 h-3.5" />
+                        SECONDARY OBJECT
+                      </div>
+                      <span className="text-[10px] text-[#8a99ad]">
+                        NORAD {event.secondary_object.norad_id}
+                      </span>
+                    </div>
+                    <div className="font-bold text-[#f0f4f8] text-xs">{event.secondary_object.name}</div>
+                    <div className="text-[10px] text-[#8a99ad]">TYPE: {event.secondary_object.type}</div>
+
+                    {secondaryObject ? (
+                      <div className="grid grid-cols-2 gap-1 text-[10px] pt-1.5 border-t border-white/5 text-[#8a99ad]">
+                        <div>Inc: {secondaryObject.orbital_parameters.inclination_deg}&deg;</div>
+                        <div>Ecc: {secondaryObject.orbital_parameters.eccentricity}</div>
+                        <div>Perigee: {secondaryObject.orbital_parameters.perigee_altitude_km} km</div>
+                        <div>Apogee: {secondaryObject.orbital_parameters.apogee_altitude_km} km</div>
+                        <div className="col-span-2 text-[9px] text-emerald-400/90 pt-0.5 font-semibold">
+                          ✓ SGP4 Propagated Trajectory Active on Globe
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-amber-400/80 pt-1 border-t border-white/5">
+                        Accurate geodetic position unavailable (unpropagated)
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Scientific Rule 2 Adherence Notice */}
+                  <div className="p-2 rounded bg-[#080d16] border border-[#152033] text-[10px] font-mono text-[#64748b] leading-relaxed">
+                    Analytical SGP4 / TEME distance screening. No collision probability (P<sub>c</sub>) claimed without covariance.
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+=======
+                  {/* Primary Keplerian Orbital Elements */}
+                  {primaryObject && (
+                    <div className="p-2.5 rounded bg-[#070b14] border border-[#172236] space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[#00e5ff] text-[11px] font-sans font-semibold">
+                          <Orbit className="w-3.5 h-3.5" />
+                          <span>Primary Orbital Elements</span>
+                        </div>
+                        <span className="text-[10px] text-[#64748b]">#{primaryObject.norad_id}</span>
+                      </div>
+                      <div className="text-[11px] text-[#cbd5e1]">
+                        Inc: {primaryObject.orbital_parameters.inclination_deg}&deg; &bull; Ecc: {primaryObject.orbital_parameters.eccentricity}
+                      </div>
+                      <div className="text-[11px] text-[#cbd5e1]">
+                        Perigee: {primaryObject.orbital_parameters.perigee_altitude_km.toFixed(1)} km &bull; Apogee: {primaryObject.orbital_parameters.apogee_altitude_km.toFixed(1)} km
+                      </div>
+                      <div className="text-[10px] text-[#94a3b8]">
+                        RAAN (&Omega;): {primaryObject.orbital_parameters.raan_deg ?? 0}&deg; &bull; Mean Anomaly (M): {primaryObject.orbital_parameters.mean_anomaly_deg ?? 0}&deg;
+                      </div>
+                      <div className="text-[10px] text-[#64748b]">
+                        Period: {primaryObject.orbital_parameters.period_minutes.toFixed(2)} min &bull; SMA: {primaryObject.orbital_parameters.semi_major_axis_km.toFixed(1)} km
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Secondary Keplerian Orbital Elements */}
+                  {secondaryObject && (
+                    <div className="p-2.5 rounded bg-[#070b14] border border-[#172236] space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-amber-400 text-[11px] font-sans font-semibold">
+                          <Orbit className="w-3.5 h-3.5" />
+                          <span>Secondary Orbital Elements</span>
+                        </div>
+                        <span className="text-[10px] text-[#64748b]">#{secondaryObject.norad_id}</span>
+                      </div>
+                      <div className="text-[11px] text-[#cbd5e1]">
+                        Inc: {secondaryObject.orbital_parameters.inclination_deg}&deg; &bull; Ecc: {secondaryObject.orbital_parameters.eccentricity}
+                      </div>
+                      <div className="text-[11px] text-[#cbd5e1]">
+                        Perigee: {secondaryObject.orbital_parameters.perigee_altitude_km.toFixed(1)} km &bull; Apogee: {secondaryObject.orbital_parameters.apogee_altitude_km.toFixed(1)} km
+                      </div>
+                      <div className="text-[10px] text-[#94a3b8]">
+                        RAAN (&Omega;): {secondaryObject.orbital_parameters.raan_deg ?? 0}&deg; &bull; Mean Anomaly (M): {secondaryObject.orbital_parameters.mean_anomaly_deg ?? 0}&deg;
+                      </div>
+                      <div className="text-[10px] text-[#64748b]">
+                        Period: {secondaryObject.orbital_parameters.period_minutes.toFixed(2)} min &bull; SMA: {secondaryObject.orbital_parameters.semi_major_axis_km.toFixed(1)} km
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Co-Orbital Synthetic Intercept Diagnostics Note */}
+                  {isCoOrbitalPair && (
+                    <div className="p-2 rounded bg-[#0c1524] border border-[#1d2b42] text-[10px] font-mono text-[#94a3b8] leading-relaxed">
+                      <strong className="text-[#00e5ff]">Astrodynamics Analysis:</strong> Shared orbital plane (Inc {primaryObject?.orbital_parameters.inclination_deg}&deg;, Alt ~413-420 km) with differential RAAN (&Delta;&Omega; = 0.02&deg;) and true anomaly phase offset (&Delta;M = 0.015&deg;), resulting in close-approach intercept.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+>>>>>>> 15183ce08edcd8d13d9bdbba3bd0cb7ff47e1d58
 
             {/* Scientific Rule 2 Adherence Notice */}
             <div className="p-2.5 rounded bg-[#070b16] border border-[#121b2c] text-[10px] font-mono text-[#64748b] leading-relaxed">
@@ -336,6 +475,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
         {/* If Single Catalog Satellite is Selected */}
         {!event && selectedCatalogObject && (
           <div className="space-y-3 text-xs">
+<<<<<<< HEAD
             {/* Overview Metadata */}
             <div className="p-3.5 rounded bg-[#0b1222] border border-[#16233b] space-y-2">
               <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#64748b] block mb-1">
@@ -354,11 +494,28 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                 <span className="font-mono text-[#f8fafc]">{selectedCatalogObject.object_type}</span>
               </div>
               <div className="flex justify-between items-center py-1">
+=======
+            <div className="p-3 rounded bg-[#0d1424] border border-[#172236] space-y-2">
+              <div className="flex justify-between">
+                <span className="text-[#94a3b8]">NORAD ID</span>
+                <span className="font-mono text-[#00e5ff] font-semibold">#{selectedCatalogObject.norad_id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#94a3b8]">Intl Designator</span>
+                <span className="font-mono text-[#f8fafc]">{selectedCatalogObject.intl_des}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#94a3b8]">Object Type</span>
+                <span className="font-mono text-[#f8fafc]">{selectedCatalogObject.object_type}</span>
+              </div>
+              <div className="flex justify-between">
+>>>>>>> 15183ce08edcd8d13d9bdbba3bd0cb7ff47e1d58
                 <span className="text-[#94a3b8]">TLE Epoch Age</span>
                 <span className="font-mono text-[#94a3b8]">{selectedCatalogObject.element_age_days.toFixed(1)} days</span>
               </div>
             </div>
 
+<<<<<<< HEAD
             {/* Collapsible Advanced Keplerian Parameters */}
             <div className="pt-1">
               <button
@@ -406,6 +563,21 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
               )}
             </div>
           </div>
+=======
+            <div className="p-3 rounded bg-[#0d1424] border border-[#172236] space-y-1.5 font-mono text-xs">
+              <div className="text-[11px] font-sans font-semibold text-[#00e5ff] mb-1">
+                Keplerian Parameters
+              </div>
+              <div className="text-[#cbd5e1]">Inclination: {selectedCatalogObject.orbital_parameters.inclination_deg}&deg;</div>
+              <div className="text-[#cbd5e1]">Eccentricity: {selectedCatalogObject.orbital_parameters.eccentricity}</div>
+              <div className="text-[#94a3b8]">Perigee: {selectedCatalogObject.orbital_parameters.perigee_altitude_km} km</div>
+              <div className="text-[#94a3b8]">Apogee: {selectedCatalogObject.orbital_parameters.apogee_altitude_km} km</div>
+              <div className="text-[#94a3b8]">RAAN (&Omega;): {selectedCatalogObject.orbital_parameters.raan_deg ?? 'N/A'}&deg;</div>
+              <div className="text-[#94a3b8]">Period: {selectedCatalogObject.orbital_parameters.period_minutes} min</div>
+            </div>
+          </div>
+>>>>>>> 6d564b1c7fe16037100977f25912959226d2d713
+>>>>>>> 15183ce08edcd8d13d9bdbba3bd0cb7ff47e1d58
         )}
       </div>
     </aside>

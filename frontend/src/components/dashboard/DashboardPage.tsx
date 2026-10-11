@@ -121,6 +121,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
     setIsInspectorOpen(false);
   };
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 15183ce08edcd8d13d9bdbba3bd0cb7ff47e1d58
   const primaryObj = objects.find(
     (o) => o.norad_id === selectedEvent?.primary_object.norad_id
   );
