@@ -179,15 +179,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
 
         {/* Center Stage: Interactive 3D Earth Globe Visualizer */}
         <div className="flex-1 h-full relative bg-[#070b14] overflow-hidden">
-          <GlobeView
-            selectedEvent={selectedEvent}
-            primaryTrajectory={primaryTrajectory}
-            secondaryTrajectory={secondaryTrajectory}
-            events={events}
-            onSelectEvent={handleSelectEvent}
-            showOutlines={showOutlines}
-            showOrbits={showOrbits}
-          />
+<GlobeView
+             selectedEvent={selectedEvent}
+             primaryTrajectory={primaryTrajectory}
+             secondaryTrajectory={secondaryTrajectory}
+             showOutlines={showOutlines}
+             showOrbits={showOrbits}
+           />
 
           {/* Minimal Floating Canvas Controls Toolbar (Top-Right of Globe) */}
           <div className="absolute top-3.5 right-4 flex items-center gap-1.5 z-20">
