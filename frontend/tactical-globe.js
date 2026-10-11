@@ -362,11 +362,12 @@
     };
   }
 
-  // The Tracked Orbital Trajectories (Strict Color Tokens)
+  // The Tracked Orbital Trajectories (Strict Color Tokens & Image 2 designations)
   const ORBIT_CONFIGS = [
     {
       id: 'orbit-a',
-      name: 'OBJECT A · ISS',
+      name: 'SAT-7421 (ISS)',
+      tag: 'SAT-7421',
       norad: '25544',
       type: 'PRIMARY ASSET',
       color: '#14ADFF', // Object A: #14ADFF (--accent)
@@ -380,7 +381,8 @@
     },
     {
       id: 'orbit-b',
-      name: 'OBJECT B · CZ-4B',
+      name: 'SAT-9812 (CZ-4B)',
+      tag: 'SAT-9812',
       norad: '44238',
       type: 'CONJUNCTION CANDIDATE',
       color: '#FACC15', // Object B: #FACC15 (--cta)
@@ -395,6 +397,7 @@
     {
       id: 'orbit-c',
       name: 'SENTINEL-1A',
+      tag: 'SENTINEL-1A',
       norad: '39634',
       type: 'SSO POLAR',
       color: '#84CC16', // Other trajectory: #84CC16 (--success), thin 60% opacity
@@ -409,6 +412,7 @@
     {
       id: 'orbit-d',
       name: 'STARLINK-1007',
+      tag: 'STARLINK-1007',
       norad: '44715',
       type: 'LEO CONSTELLATION',
       color: '#8B5CF6', // Other trajectory: #8B5CF6 (--info-purple), thin 60% opacity
@@ -433,6 +437,9 @@
       this.animId = null;
       this.isDestroyed = false;
       this.feats = null;
+
+      // Active interactive target ('conjunction' by default for Image 2, or orbit id)
+      this.selectedTarget = 'conjunction';
 
       // Rotation angles
       this.rot = {
@@ -651,6 +658,25 @@
       svg.addEventListener('pointerup', onPointerEnd);
       svg.addEventListener('pointercancel', onPointerEnd);
 
+      // Interactive Click Handling for Satellites and Conjunction Reticle
+      svg.addEventListener('click', (e) => {
+        const p = getSvgCoords(e);
+        if (this.drag && Math.abs(p.x - this.drag.startX) > 6) return;
+
+        const satEl = e.target.closest('[data-sat-id]');
+        if (satEl) {
+          const satId = satEl.dataset.satId;
+          this.selectedTarget = this.selectedTarget === satId ? 'conjunction' : satId;
+          return;
+        }
+
+        const tcaEl = e.target.closest('[data-tca="true"]');
+        if (tcaEl) {
+          this.selectedTarget = 'conjunction';
+          return;
+        }
+      });
+
       // Buttons in external panel header
       const btnSpin = document.getElementById('btn-toggle-spin');
       if (btnSpin) {
@@ -718,6 +744,7 @@
       let backOrbitsHtml = '';
       let frontOrbitsHtml = '';
       let satellitesHtml = '';
+      const posMap = {};
 
       const steps = 96;
 
@@ -773,26 +800,28 @@
         // Animated Satellite Craft Position
         const currentTheta = (cfg.initAnomaly + this.orbitTime * cfg.periodSpeed * 0.45) % (2 * Math.PI);
         const satPos = projectOrbitalPoint(currentTheta, cfg.inc, cfg.raan, cfg.radiusRatio, lambda, phi, gamma, R, cx, cy);
+        posMap[cfg.id] = satPos;
 
         // Satellites behind the Earth are dimmed
         const opacity = satPos.isOccludedByEarth ? '0.22' : '1.0';
         const tagVisibility = satPos.isOccludedByEarth ? 'none' : 'block';
+        const isSelected = (this.selectedTarget === cfg.id);
 
         satellitesHtml += `
-          <g transform="translate(${satPos.sx.toFixed(1)}, ${satPos.sy.toFixed(1)})" opacity="${opacity}">
-            <!-- Radar tracking ring (no glow) -->
-            <circle r="8" fill="none" stroke="${cfg.color}" stroke-width="1.0" opacity="0.6">
-              <animate attributeName="r" values="5;11;5" dur="2.4s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.8;0.2;0.8" dur="2.4s" repeatCount="indefinite" />
+          <g transform="translate(${satPos.sx.toFixed(1)}, ${satPos.sy.toFixed(1)})" opacity="${opacity}" data-sat-id="${cfg.id}" style="cursor:pointer;">
+            <!-- Radar tracking ring -->
+            <circle r="${isSelected ? 11 : 8}" fill="none" stroke="${isSelected ? '#EF4444' : cfg.color}" stroke-width="${isSelected ? 1.6 : 1.0}" opacity="0.75">
+              <animate attributeName="r" values="${isSelected ? '9;14;9' : '5;11;5'}" dur="2.4s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.85;0.25;0.85" dur="2.4s" repeatCount="indefinite" />
             </circle>
 
             <!-- Craft Core Dot -->
-            <circle r="3.5" fill="${cfg.color}" />
+            <circle r="${isSelected ? 4.5 : 3.5}" fill="${isSelected ? '#EF4444' : cfg.color}" />
 
             <!-- Object name labels: --bg-card (#0F172A) background, --text-primary (#FFFFFF) text, 1px --border (#1E293B) -->
             <g style="display:${tagVisibility}; pointer-events:none;">
-              <rect x="8" y="-14" width="${cfg.name.length * 6.4 + 14}" height="16" rx="4" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
-              <text x="14" y="-3" fill="#FFFFFF" font-family="'DM Mono', monospace" font-size="8.5" font-weight="600" letter-spacing="0.4px">
+              <rect x="8" y="-14" width="${cfg.name.length * 6.4 + 14}" height="16" rx="4" fill="#0F172A" stroke="${isSelected ? '#EF4444' : '#1E293B'}" stroke-width="1" />
+              <text x="14" y="-3" fill="${isSelected ? '#EF4444' : '#FFFFFF'}" font-family="'DM Mono', monospace" font-size="8.5" font-weight="600" letter-spacing="0.4px">
                 ${cfg.name}
               </text>
             </g>
@@ -800,26 +829,71 @@
         `;
       });
 
-      // Closest-approach marker and ring: #EF4444, with a visible text label "CLOSEST APPROACH"
+      // Closest-approach marker, double-reticle, dashed beam & HUD card (Image 2)
       const caPos = projectOrbitalPoint(0.44, 52.9, 39.2, 1.29, lambda, phi, gamma, R, cx, cy);
+      const satA = posMap['orbit-a'];
+      const satB = posMap['orbit-b'];
       let closestApproachHtml = '';
+
       if (!caPos.isOccludedByEarth) {
+        const isConjunctionActive = (this.selectedTarget === 'conjunction' || this.selectedTarget === 'orbit-a' || this.selectedTarget === 'orbit-b');
+
+        let beamHtml = '';
+        if (satA && satB && isConjunctionActive) {
+          beamHtml = `
+            <line x1="${satA.sx.toFixed(1)}" y1="${satA.sy.toFixed(1)}" x2="${satB.sx.toFixed(1)}" y2="${satB.sy.toFixed(1)}"
+              stroke="#EF4444" stroke-width="2.5" stroke-dasharray="6,4" stroke-opacity="0.95" />
+            <line x1="${satA.sx.toFixed(1)}" y1="${satA.sy.toFixed(1)}" x2="${satB.sx.toFixed(1)}" y2="${satB.sy.toFixed(1)}"
+              stroke="#EF4444" stroke-width="6.5" stroke-opacity="0.25" />
+          `;
+        }
+
         closestApproachHtml = `
-          <g transform="translate(${caPos.sx.toFixed(1)}, ${caPos.sy.toFixed(1)})">
-            <!-- Pulsing ring: #EF4444 -->
-            <circle r="12" fill="none" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="3,3">
-              <animate attributeName="r" values="8;15;8" dur="2s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
+          <!-- Image 2: Red Conjunction Encounter Overlay -->
+          ${beamHtml}
+
+          <!-- Double Concentric Red Reticle & Crosshair (Intersection Point) -->
+          <g transform="translate(${caPos.sx.toFixed(1)}, ${caPos.sy.toFixed(1)})" data-tca="true" style="cursor:pointer;">
+            <!-- Outer Pulsing Ring: #EF4444 -->
+            <circle r="18" fill="none" stroke="#EF4444" stroke-width="1.8" stroke-opacity="0.95">
+              <animate attributeName="r" values="16;22;16" dur="2s" repeatCount="indefinite" />
+              <animate attributeName="stroke-opacity" values="1;0.45;1" dur="2s" repeatCount="indefinite" />
             </circle>
 
-            <!-- Center point: #EF4444 -->
-            <circle r="3.5" fill="#EF4444" />
+            <!-- Inner Circle -->
+            <circle r="10" fill="rgba(239, 68, 68, 0.18)" stroke="#EF4444" stroke-width="1.8" />
 
-            <!-- Visible label: CLOSEST APPROACH in #EF4444 with #0F172A card background and #EF4444 border -->
-            <g transform="translate(14, -10)" pointer-events="none">
-              <rect x="0" y="0" width="128" height="18" rx="4" fill="#0F172A" stroke="#EF4444" stroke-width="1" />
-              <text x="8" y="12" fill="#EF4444" font-family="'DM Mono', monospace" font-size="8.5" font-weight="700" letter-spacing="0.5px">CLOSEST APPROACH</text>
-            </g>
+            <!-- Reticle Crosshairs -->
+            <line x1="-24" y1="0" x2="-15" y2="0" stroke="#EF4444" stroke-width="1.8" />
+            <line x1="15" y1="0" x2="24" y2="0" stroke="#EF4444" stroke-width="1.8" />
+            <line x1="0" y1="-24" x2="0" y2="-15" stroke="#EF4444" stroke-width="1.8" />
+            <line x1="0" y1="15" x2="0" y2="24" stroke="#EF4444" stroke-width="1.8" />
+
+            <!-- Core Bright Center Point -->
+            <circle r="3.5" fill="#FFFFFF" />
+          </g>
+
+          <!-- Red Angled Leader Line (Image 2) -->
+          <path d="M ${caPos.sx.toFixed(1)},${caPos.sy.toFixed(1)} L ${(caPos.sx + 42).toFixed(1)},${(caPos.sy - 32).toFixed(1)} L ${(caPos.sx + 72).toFixed(1)},${(caPos.sy - 32).toFixed(1)}"
+            fill="none" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round" />
+
+          <!-- Red Tactical HUD Callout Box (Image 2: SAT-7421 & SAT-9812) -->
+          <g transform="translate(${(caPos.sx + 72).toFixed(1)}, ${(caPos.sy - 62).toFixed(1)})" data-tca="true" style="cursor:pointer;">
+            <rect x="0" y="0" width="168" height="74" rx="4" fill="rgba(28, 4, 8, 0.94)" stroke="#EF4444" stroke-width="1.8" />
+            
+            <!-- Tactical Corner Bracket Accents -->
+            <path d="M 0,8 L 0,0 L 8,0" fill="none" stroke="#EF4444" stroke-width="2.2" />
+            <path d="M 160,0 L 168,0 L 168,8" fill="none" stroke="#EF4444" stroke-width="2.2" />
+            <path d="M 168,66 L 168,74 L 160,74" fill="none" stroke="#EF4444" stroke-width="2.2" />
+            <path d="M 8,74 L 0,74 L 0,66" fill="none" stroke="#EF4444" stroke-width="2.2" />
+
+            <!-- Satellite Identifiers from Image 2 -->
+            <text x="14" y="24" fill="#FFFFFF" font-family="'Orbitron', 'Outfit', sans-serif" font-size="14" font-weight="800" letter-spacing="1.2px">SAT-7421</text>
+            <text x="14" y="44" fill="#FFFFFF" font-family="'Orbitron', 'Outfit', sans-serif" font-size="14" font-weight="800" letter-spacing="1.2px">SAT-9812</text>
+
+            <!-- Status Pill (Compliant with Rule 2 of AGENTS.md: Miss Distance, No Fake Pc) -->
+            <rect x="14" y="52" width="140" height="15" rx="3" fill="rgba(239, 68, 68, 0.24)" />
+            <text x="20" y="63" fill="#EF4444" font-family="'DM Mono', monospace" font-size="8.5" font-weight="700" letter-spacing="0.5px">MISS: 3.42 KM · CRITICAL</text>
           </g>
         `;
       }

@@ -9,12 +9,43 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Orbitron:wght@600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
+  <!-- Cinematic Launch Radar Splash Screen (Image 1 Inspiration) -->
+  <div id="launch-radar-overlay" class="launch-radar-overlay" role="dialog" aria-modal="true" aria-label="Orbital Radar Loading">
+    <div class="radar-scope-wrapper">
+      <div class="radar-scope">
+        <div class="radar-ring ring-1"></div>
+        <div class="radar-ring ring-2"></div>
+        <div class="radar-ring ring-3"></div>
+        <div class="radar-crosshair crosshair-h"></div>
+        <div class="radar-crosshair crosshair-v"></div>
+        <div class="radar-ticks"></div>
+        <div class="radar-sweep-beam"></div>
+        <div class="radar-blip blip-1"></div>
+        <div class="radar-blip blip-2"></div>
+        <div class="radar-blip blip-3"></div>
+        <div class="radar-blip blip-4"></div>
+        <div class="radar-center-ring"></div>
+      </div>
+    </div>
+    <div class="radar-hud">
+      <h1 class="radar-title">ORBITAL RADAR<span class="radar-tm">™</span></h1>
+      <p class="radar-tagline">Making Earth's orbit understandable.</p>
+      <div class="radar-loading-indicator">
+        <span class="radar-pulse-dot"></span>
+        <span class="radar-status-label">▶ LOADING SATELLITES...</span>
+        <b class="radar-pct" id="radar-pct-counter">0%</b>
+      </div>
+      <div class="radar-subtext">SYNCING LIVE ORBITAL DATA...</div>
+      <button id="skip-radar-btn" class="radar-skip-btn" type="button">ENTER WORKSPACE ➔</button>
+    </div>
+  </div>
+
   <div class="app-shell">
     <aside class="sidebar">
       <a class="brand" href="#overview" aria-label="Trajectra overview"><span
