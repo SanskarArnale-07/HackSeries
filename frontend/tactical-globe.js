@@ -362,43 +362,63 @@
     };
   }
 
-  // The 3 Real-time Orbital Trajectories
+  // The Tracked Orbital Trajectories (Strict Color Tokens)
   const ORBIT_CONFIGS = [
     {
-      id: 'orbit-leo',
-      name: 'ISS (ZARYA)',
+      id: 'orbit-a',
+      name: 'OBJECT A · ISS',
       norad: '25544',
-      type: 'LEO STATION',
-      color: '#65d7c2', // Mint cyan
+      type: 'PRIMARY ASSET',
+      color: '#14ADFF', // Object A: #14ADFF (--accent)
       radiusRatio: 1.28,
       inc: 51.64,
       raan: 38.0,
       periodSpeed: 0.85,
-      initAnomaly: 0.4
+      initAnomaly: 0.45,
+      strokeWidth: 1.6,
+      opacity: 0.95
     },
     {
-      id: 'orbit-sso',
+      id: 'orbit-b',
+      name: 'OBJECT B · CZ-4B',
+      norad: '44238',
+      type: 'CONJUNCTION CANDIDATE',
+      color: '#FACC15', // Object B: #FACC15 (--cta)
+      radiusRatio: 1.30,
+      inc: 54.2,
+      raan: 40.5,
+      periodSpeed: 0.83,
+      initAnomaly: 0.43,
+      strokeWidth: 1.6,
+      opacity: 0.95
+    },
+    {
+      id: 'orbit-c',
       name: 'SENTINEL-1A',
       norad: '39634',
       type: 'SSO POLAR',
-      color: '#d9b56a', // Amber gold
+      color: '#84CC16', // Other trajectory: #84CC16 (--success), thin 60% opacity
       radiusRatio: 1.48,
       inc: 98.18,
       raan: 142.0,
       periodSpeed: 0.60,
-      initAnomaly: 2.1
+      initAnomaly: 2.1,
+      strokeWidth: 1.0,
+      opacity: 0.60
     },
     {
-      id: 'orbit-threat',
-      name: 'CZ-4B DEBRIS',
-      norad: '44238',
-      type: 'CONJUNCTION VECTOR',
-      color: '#f07167', // Alert coral / red
-      radiusRatio: 1.70,
-      inc: 63.4,
-      raan: 255.0,
-      periodSpeed: 0.42,
-      initAnomaly: 4.8
+      id: 'orbit-d',
+      name: 'STARLINK-1007',
+      norad: '44715',
+      type: 'LEO CONSTELLATION',
+      color: '#8B5CF6', // Other trajectory: #8B5CF6 (--info-purple), thin 60% opacity
+      radiusRatio: 1.62,
+      inc: 53.0,
+      raan: 220.0,
+      periodSpeed: 0.45,
+      initAnomaly: 4.5,
+      strokeWidth: 1.0,
+      opacity: 0.60
     }
   ];
 
@@ -435,16 +455,14 @@
       // Orbit animation state (running time in seconds)
       this.orbitTime = 0;
 
-      // Styling tokens
+      // Styling tokens (Strict Color Tokens: flat fills, no gradients, low contrast ocean/land)
       this.style = {
-        oceanColor: '#0c1620',
-        landFill: '#1a2835',
-        landStroke: '#334c5e',
-        strokeWidth: 0.6,
-        glowColor: '#53b4b0',
-        glowIntensity: 0.5,
-        gridColor: '#304759',
-        gridOpacity: 0.28
+        oceanColor: '#0F2A52', // Ocean: #0F2A52
+        landFill: '#2F6F66',   // Land: #2F6F66
+        landStroke: '#3B8C81', // 10% lighter outline of #2F6F66
+        strokeWidth: 0.75,
+        gridColor: '#1E293B',  // --border: #1E293B
+        gridOpacity: 0.35
       };
 
       this.init();
@@ -471,48 +489,21 @@
       const html = `
         <div class="tactical-globe-wrapper" style="position:relative; width:100%; max-width:620px; margin:0 auto; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;">
           <svg class="tactical-globe-svg" id="${uid}_svg" viewBox="0 0 ${size} ${size}" preserveAspectRatio="xMidYMid meet"
-            style="display:block; width:100%; height:100%; aspect-ratio:1/1; cursor:grab; user-select:none; touch-action:none;">
+            style="display:block; width:100%; height:100%; aspect-ratio:1/1; cursor:grab; user-select:none; touch-action:none; background:#020617;">
             <defs>
-              <filter id="${uid}_glow" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="3.5" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <radialGradient id="${uid}_shade" cx="35%" cy="30%" r="75%">
-                <stop offset="0%" stop-color="rgba(255,255,255,0.14)" />
-                <stop offset="55%" stop-color="rgba(255,255,255,0)" />
-                <stop offset="85%" stop-color="rgba(0,0,0,0.38)" />
-                <stop offset="100%" stop-color="rgba(0,0,0,0.72)" />
-              </radialGradient>
-              <radialGradient id="${uid}_atm" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="rgba(83,180,176,0)" />
-                <stop offset="74%" stop-color="rgba(83,180,176,0)" />
-                <stop offset="80%" stop-color="rgba(83,180,176,0.35)" />
-                <stop offset="100%" stop-color="rgba(83,180,176,0)" />
-              </radialGradient>
-              <linearGradient id="${uid}_oceanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#142634" />
-                <stop offset="50%" stop-color="#0c1722" />
-                <stop offset="100%" stop-color="#070f17" />
-              </linearGradient>
               <clipPath id="${uid}_disc">
                 <circle cx="${this.cx}" cy="${this.cy}" r="${this.R}" />
               </clipPath>
             </defs>
 
-            <!-- Stars Background -->
-            <g id="${uid}_stars" opacity="0.65"></g>
+            <!-- Space behind the globe: faint star dots at 30% white -->
+            <g id="${uid}_stars"></g>
 
             <!-- Back Orbit Segments (Behind the Earth) -->
             <g id="${uid}_back_orbits"></g>
 
-            <!-- Outer Atmospheric Glow -->
-            <circle cx="${this.cx}" cy="${this.cy}" r="${this.R + 45}" fill="url(#${uid}_atm)" pointer-events="none" />
-
-            <!-- Solid Earth Sphere Disc -->
-            <circle cx="${this.cx}" cy="${this.cy}" r="${this.R}" fill="url(#${uid}_oceanGrad)" />
+            <!-- Flat Solid Earth Ocean Sphere Disc: #0F2A52 -->
+            <circle cx="${this.cx}" cy="${this.cy}" r="${this.R}" fill="${this.style.oceanColor}" />
 
             <!-- Clipped Landmasses & Graticule -->
             <g clip-path="url(#${uid}_disc)">
@@ -520,21 +511,21 @@
               <g id="${uid}_countries"></g>
             </g>
 
-            <!-- 3D Spherical Depth Shading Layer -->
-            <circle cx="${this.cx}" cy="${this.cy}" r="${this.R}" fill="url(#${uid}_shade)" pointer-events="none" />
-            
-            <!-- Sphere Limb Outline -->
-            <circle cx="${this.cx}" cy="${this.cy}" r="${this.R}" fill="none" stroke="rgba(101,215,194,0.32)" stroke-width="1.2" pointer-events="none" />
+            <!-- Atmosphere rim: 1-2px ring in --accent (#14ADFF) at 30% opacity. No blur or neon glow. -->
+            <circle cx="${this.cx}" cy="${this.cy}" r="${this.R + 1}" fill="none" stroke="#14ADFF" stroke-width="1.5" stroke-opacity="0.30" pointer-events="none" />
 
             <!-- Front Orbit Segments (In Front of Earth & Space) -->
             <g id="${uid}_front_orbits"></g>
+
+            <!-- Closest Approach Marker & Ring -->
+            <g id="${uid}_closest_approach"></g>
 
             <!-- Active Satellites & Targeting Beacons -->
             <g id="${uid}_satellites"></g>
           </svg>
 
-          <!-- Interactive Tooltip -->
-          <div id="${uid}_tooltip" style="position:absolute; display:none; pointer-events:none; z-index:25; background:rgba(12,22,32,0.92); border:1px solid #334c5e; border-radius:6px; padding:6px 10px; font-family:'DM Mono',monospace; font-size:10px; color:#e8eef2; box-shadow:0 8px 24px rgba(0,0,0,0.6); backdrop-filter:blur(6px);"></div>
+          <!-- Interactive Tooltip: --bg-card background, --text-primary text, 1px --border -->
+          <div id="${uid}_tooltip" style="position:absolute; display:none; pointer-events:none; z-index:25; background:#0F172A; border:1px solid #1E293B; border-radius:6px; padding:6px 10px; font-family:'DM Mono',monospace; font-size:10px; color:#FFFFFF; box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
         </div>
       `;
 
@@ -544,6 +535,7 @@
       this.countriesGroup = document.getElementById(`${uid}_countries`);
       this.backOrbitsGroup = document.getElementById(`${uid}_back_orbits`);
       this.frontOrbitsGroup = document.getElementById(`${uid}_front_orbits`);
+      this.closestApproachGroup = document.getElementById(`${uid}_closest_approach`);
       this.satellitesGroup = document.getElementById(`${uid}_satellites`);
       this.starsGroup = document.getElementById(`${uid}_stars`);
       this.tooltip = document.getElementById(`${uid}_tooltip`);
@@ -552,6 +544,7 @@
     }
 
     generateStars() {
+      // Faint star dots at 30% white
       let starsHtml = '';
       const count = 55;
       const seedR = () => Math.random();
@@ -561,16 +554,14 @@
         const dx = x - this.cx;
         const dy = y - this.cy;
         // Don't draw behind the core Earth disc
-        if (dx * dx + dy * dy < (this.R + 10) * (this.R + 10)) continue;
-        const r = 0.5 + seedR() * 0.9;
-        const o = 0.2 + seedR() * 0.6;
-        starsHtml += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="rgba(255,255,255,${o.toFixed(2)})" />`;
+        if (dx * dx + dy * dy < (this.R + 8) * (this.R + 8)) continue;
+        const r = 0.5 + seedR() * 0.8;
+        starsHtml += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="rgba(255,255,255,0.30)" />`;
       }
       this.starsGroup.innerHTML = starsHtml;
     }
 
     loadMapData() {
-      // First attempt local offline snapshot, then fallback to CDN
       const localUrl = 'countries-110m.json';
       const cdnUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
 
@@ -644,7 +635,6 @@
         const dy = p.y - this.drag.startY;
         const sens = 0.42;
 
-        // Moving right turns globe right (decreases lambda)
         this.rot.lambda = this.drag.startLambda - dx * sens;
         this.rot.phi = clamp(this.drag.startPhi + dy * sens, -85, 85);
       });
@@ -690,14 +680,11 @@
         const dt = Math.min(0.05, (now - lastTime) / 1000);
         lastTime = now;
 
-        // Auto-rotation when idle (resumes 1.2s after user finishes drag)
         if (this.autoRotate && !this.drag.active && (now - this.lastUserInteraction > 1200)) {
           this.rot.lambda += this.autoRotateSpeed * dt;
         }
 
-        // Advance orbital time
         this.orbitTime += dt;
-
         this.renderScene();
         this.animId = requestAnimationFrame(frame);
       };
@@ -723,7 +710,7 @@
         }
       }
 
-      // 3. Render the 3 Real-time 3D Orbits
+      // 3. Render the Tracked 3D Orbits & Closest Approach
       this.renderOrbits(lambda, phi, gamma, R, cx, cy);
     }
 
@@ -770,16 +757,16 @@
         // Back segment (rendered behind the solid Earth)
         if (backPathD) {
           backOrbitsHtml += `
-            <path d="${backPathD}" fill="none" stroke="${cfg.color}" stroke-width="1.0"
-              stroke-opacity="0.30" stroke-dasharray="3,4" vector-effect="non-scaling-stroke"></path>
+            <path d="${backPathD}" fill="none" stroke="${cfg.color}" stroke-width="${cfg.strokeWidth || 1.0}"
+              stroke-opacity="${(cfg.opacity || 0.9) * 0.35}" stroke-dasharray="3,4" vector-effect="non-scaling-stroke"></path>
           `;
         }
 
-        // Front segment (rendered in front of Earth & space)
+        // Front segment (flat fill, no glow filter)
         if (frontPathD) {
           frontOrbitsHtml += `
-            <path d="${frontPathD}" fill="none" stroke="${cfg.color}" stroke-width="1.6"
-              stroke-opacity="0.92" filter="url(#${this.uid}_glow)" vector-effect="non-scaling-stroke"></path>
+            <path d="${frontPathD}" fill="none" stroke="${cfg.color}" stroke-width="${cfg.strokeWidth || 1.4}"
+              stroke-opacity="${cfg.opacity || 0.95}" vector-effect="non-scaling-stroke"></path>
           `;
         }
 
@@ -793,19 +780,19 @@
 
         satellitesHtml += `
           <g transform="translate(${satPos.sx.toFixed(1)}, ${satPos.sy.toFixed(1)})" opacity="${opacity}">
-            <!-- Pulsing radar ring -->
-            <circle r="9" fill="${rgba(cfg.color, 0.20)}" stroke="${cfg.color}" stroke-width="0.8" opacity="0.85">
-              <animate attributeName="r" values="4;13;4" dur="2.4s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.9;0.1;0.9" dur="2.4s" repeatCount="indefinite" />
+            <!-- Radar tracking ring (no glow) -->
+            <circle r="8" fill="none" stroke="${cfg.color}" stroke-width="1.0" opacity="0.6">
+              <animate attributeName="r" values="5;11;5" dur="2.4s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.8;0.2;0.8" dur="2.4s" repeatCount="indefinite" />
             </circle>
 
             <!-- Craft Core Dot -->
-            <circle r="3.5" fill="${cfg.color}" stroke="#ffffff" stroke-width="1.0" />
+            <circle r="3.5" fill="${cfg.color}" />
 
-            <!-- Tactical Label (Front only) -->
+            <!-- Object name labels: --bg-card (#0F172A) background, --text-primary (#FFFFFF) text, 1px --border (#1E293B) -->
             <g style="display:${tagVisibility}; pointer-events:none;">
-              <rect x="7" y="-14" width="${cfg.name.length * 6.5 + 16}" height="15" rx="3" fill="rgba(10,17,25,0.85)" stroke="${cfg.color}" stroke-width="0.6" />
-              <text x="12" y="-3.5" fill="#e8eef2" font-family="'DM Mono', monospace" font-size="8.5" font-weight="600" letter-spacing="0.4px">
+              <rect x="8" y="-14" width="${cfg.name.length * 6.4 + 14}" height="16" rx="4" fill="#0F172A" stroke="#1E293B" stroke-width="1" />
+              <text x="14" y="-3" fill="#FFFFFF" font-family="'DM Mono', monospace" font-size="8.5" font-weight="600" letter-spacing="0.4px">
                 ${cfg.name}
               </text>
             </g>
@@ -813,8 +800,35 @@
         `;
       });
 
+      // Closest-approach marker and ring: #EF4444, with a visible text label "CLOSEST APPROACH"
+      const caPos = projectOrbitalPoint(0.44, 52.9, 39.2, 1.29, lambda, phi, gamma, R, cx, cy);
+      let closestApproachHtml = '';
+      if (!caPos.isOccludedByEarth) {
+        closestApproachHtml = `
+          <g transform="translate(${caPos.sx.toFixed(1)}, ${caPos.sy.toFixed(1)})">
+            <!-- Pulsing ring: #EF4444 -->
+            <circle r="12" fill="none" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="3,3">
+              <animate attributeName="r" values="8;15;8" dur="2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
+            </circle>
+
+            <!-- Center point: #EF4444 -->
+            <circle r="3.5" fill="#EF4444" />
+
+            <!-- Visible label: CLOSEST APPROACH in #EF4444 with #0F172A card background and #EF4444 border -->
+            <g transform="translate(14, -10)" pointer-events="none">
+              <rect x="0" y="0" width="128" height="18" rx="4" fill="#0F172A" stroke="#EF4444" stroke-width="1" />
+              <text x="8" y="12" fill="#EF4444" font-family="'DM Mono', monospace" font-size="8.5" font-weight="700" letter-spacing="0.5px">CLOSEST APPROACH</text>
+            </g>
+          </g>
+        `;
+      }
+
       this.backOrbitsGroup.innerHTML = backOrbitsHtml;
       this.frontOrbitsGroup.innerHTML = frontOrbitsHtml;
+      if (this.closestApproachGroup) {
+        this.closestApproachGroup.innerHTML = closestApproachHtml;
+      }
       this.satellitesGroup.innerHTML = satellitesHtml;
     }
 
