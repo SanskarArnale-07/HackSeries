@@ -144,12 +144,19 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
           <div className="font-bold text-[#f0f4f8] text-xs">{event.primary_object.name}</div>
           <div className="text-[10px] text-[#8a99ad]">TYPE: {event.primary_object.type}</div>
 
-          {primaryObject && (
+          {primaryObject ? (
             <div className="grid grid-cols-2 gap-1 text-[10px] pt-1.5 border-t border-white/5 text-[#8a99ad]">
               <div>Inc: {primaryObject.orbital_parameters.inclination_deg}&deg;</div>
               <div>Ecc: {primaryObject.orbital_parameters.eccentricity}</div>
               <div>Perigee: {primaryObject.orbital_parameters.perigee_altitude_km} km</div>
               <div>Apogee: {primaryObject.orbital_parameters.apogee_altitude_km} km</div>
+              <div className="col-span-2 text-[9px] text-emerald-400/90 pt-0.5 font-semibold">
+                ✓ SGP4 Propagated Trajectory Active on Globe
+              </div>
+            </div>
+          ) : (
+            <div className="text-[10px] text-amber-400/80 pt-1 border-t border-white/5">
+              Accurate geodetic position unavailable (unpropagated)
             </div>
           )}
         </div>
@@ -168,12 +175,19 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
           <div className="font-bold text-[#f0f4f8] text-xs">{event.secondary_object.name}</div>
           <div className="text-[10px] text-[#8a99ad]">TYPE: {event.secondary_object.type}</div>
 
-          {secondaryObject && (
+          {secondaryObject ? (
             <div className="grid grid-cols-2 gap-1 text-[10px] pt-1.5 border-t border-white/5 text-[#8a99ad]">
               <div>Inc: {secondaryObject.orbital_parameters.inclination_deg}&deg;</div>
               <div>Ecc: {secondaryObject.orbital_parameters.eccentricity}</div>
               <div>Perigee: {secondaryObject.orbital_parameters.perigee_altitude_km} km</div>
               <div>Apogee: {secondaryObject.orbital_parameters.apogee_altitude_km} km</div>
+              <div className="col-span-2 text-[9px] text-emerald-400/90 pt-0.5 font-semibold">
+                ✓ SGP4 Propagated Trajectory Active on Globe
+              </div>
+            </div>
+          ) : (
+            <div className="text-[10px] text-amber-400/80 pt-1 border-t border-white/5">
+              Accurate geodetic position unavailable (unpropagated)
             </div>
           )}
         </div>
