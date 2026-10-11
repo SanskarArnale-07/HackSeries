@@ -7,6 +7,9 @@ export type DashboardTab = 'overview' | 'catalog';
 interface HeaderProps {
   activeTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
+  onOpenWeather: () => void;
+  onOpenModel: () => void;
+  onOpenReports: () => void;
   health: HealthResponse | null;
   onRefresh: () => void;
   isRefreshing: boolean;
@@ -16,6 +19,9 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
+  onOpenWeather,
+  onOpenModel,
+  onOpenReports,
   health,
   onRefresh,
   isRefreshing,
@@ -29,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="h-12 border-b border-[#141f33] bg-[#070b16] px-6 flex items-center justify-between select-none z-20 flex-shrink-0">
       {/* Left: Brand Identity & Navigation */}
-      <div className="flex items-center gap-7">
+      <div className="flex items-center gap-6">
         <div
           onClick={onNavigateHome}
           className={`flex items-center gap-2.5 ${
@@ -53,10 +59,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="h-4 w-[1px] bg-[#162238] hidden sm:block" />
 
         {/* View Switcher Tabs */}
-        <nav className="flex items-center gap-1.5">
+        <nav className="flex items-center gap-1">
           <button
             onClick={() => onTabChange('overview')}
-            className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'overview'
                 ? 'text-[#f1f5f9] bg-[#10192a] border border-[#1e2d48]'
                 : 'text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent'
@@ -67,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onTabChange('catalog')}
-            className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'catalog'
                 ? 'text-[#f1f5f9] bg-[#10192a] border border-[#1e2d48]'
                 : 'text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent'
@@ -75,6 +81,27 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Database className="w-3.5 h-3.5 text-[#38bdf8]" />
             <span>Catalog</span>
+          </button>
+          <button
+            onClick={onOpenWeather}
+            className="px-2.5 py-1 rounded text-xs font-medium text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            title="View NOAA SWPC Space Weather Environment"
+          >
+            <span>Space Weather</span>
+          </button>
+          <button
+            onClick={onOpenModel}
+            className="px-2.5 py-1 rounded text-xs font-medium text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            title="View SGP4 Astrodynamics Engine Architecture"
+          >
+            <span>Engine</span>
+          </button>
+          <button
+            onClick={onOpenReports}
+            className="px-2.5 py-1 rounded text-xs font-medium text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[#0c1220] border border-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            title="View Conjunction Screening Audit Report"
+          >
+            <span>Reports</span>
           </button>
         </nav>
       </div>

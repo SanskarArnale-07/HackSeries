@@ -269,13 +269,13 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                         <span className="text-[10px] text-[#64748b]">#{primaryObject.norad_id}</span>
                       </div>
                       <div className="text-[11px] text-[#cbd5e1]">
-                        Inc: {formatDegree(primaryObject.orbital_parameters.inclination_deg)} &bull; Ecc: {formatVectorComponent(primaryObject.orbital_parameters.eccentricity, 5)}
+                        Inc: {formatDegree(primaryObject.orbital_parameters.inclination_deg, 4)} &bull; Ecc: {formatVectorComponent(primaryObject.orbital_parameters.eccentricity, 5)}
                       </div>
                       <div className="text-[11px] text-[#cbd5e1]">
                         Perigee: {formatKm(primaryObject.orbital_parameters.perigee_altitude_km, 1)} &bull; Apogee: {formatKm(primaryObject.orbital_parameters.apogee_altitude_km, 1)}
                       </div>
                       <div className="text-[10px] text-[#94a3b8]">
-                        RAAN (&Omega;): {formatDegree(primaryObject.orbital_parameters.raan_deg)} &bull; Mean Anomaly: {formatDegree(primaryObject.orbital_parameters.mean_anomaly_deg)}
+                        RAAN (&Omega;): {formatDegree(primaryObject.orbital_parameters.raan_deg, 4)} &bull; Mean Anomaly: {formatDegree(primaryObject.orbital_parameters.mean_anomaly_deg, 4)}
                       </div>
                       <div className="text-[10px] text-[#64748b]">
                         Period: {primaryObject.orbital_parameters.period_minutes ? `${primaryObject.orbital_parameters.period_minutes.toFixed(2)} min` : 'N/A'} &bull; SMA: {formatKm(primaryObject.orbital_parameters.semi_major_axis_km, 1)}
@@ -294,13 +294,13 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                         <span className="text-[10px] text-[#64748b]">#{secondaryObject.norad_id}</span>
                       </div>
                       <div className="text-[11px] text-[#cbd5e1]">
-                        Inc: {formatDegree(secondaryObject.orbital_parameters.inclination_deg)} &bull; Ecc: {formatVectorComponent(secondaryObject.orbital_parameters.eccentricity, 5)}
+                        Inc: {formatDegree(secondaryObject.orbital_parameters.inclination_deg, 4)} &bull; Ecc: {formatVectorComponent(secondaryObject.orbital_parameters.eccentricity, 5)}
                       </div>
                       <div className="text-[11px] text-[#cbd5e1]">
                         Perigee: {formatKm(secondaryObject.orbital_parameters.perigee_altitude_km, 1)} &bull; Apogee: {formatKm(secondaryObject.orbital_parameters.apogee_altitude_km, 1)}
                       </div>
                       <div className="text-[10px] text-[#94a3b8]">
-                        RAAN (&Omega;): {formatDegree(secondaryObject.orbital_parameters.raan_deg)} &bull; Mean Anomaly: {formatDegree(secondaryObject.orbital_parameters.mean_anomaly_deg)}
+                        RAAN (&Omega;): {formatDegree(secondaryObject.orbital_parameters.raan_deg, 4)} &bull; Mean Anomaly: {formatDegree(secondaryObject.orbital_parameters.mean_anomaly_deg, 4)}
                       </div>
                       <div className="text-[10px] text-[#64748b]">
                         Period: {secondaryObject.orbital_parameters.period_minutes ? `${secondaryObject.orbital_parameters.period_minutes.toFixed(2)} min` : 'N/A'} &bull; SMA: {formatKm(secondaryObject.orbital_parameters.semi_major_axis_km, 1)}
@@ -308,10 +308,18 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                     </div>
                   )}
 
-                  {/* Astrodynamics Diagnostics Note */}
-                  {isCoOrbitalPair && (
+                  {/* Differential Co-Orbital Astrodynamics Note */}
+                  {primaryObject && secondaryObject && (
                     <div className="p-2.5 rounded bg-[#09101c] border border-[#162238] text-[10px] font-mono text-[#94a3b8] leading-relaxed">
-                      <strong className="text-[#38bdf8]">Astrodynamics Note:</strong> Co-planar orbit with minor differential RAAN &amp; mean anomaly phase offset resulting in close-approach intercept.
+                      <strong className="text-[#38bdf8]">Differential Geometry:</strong>{' '}
+                      &Delta;Inc: {(Math.abs((primaryObject.orbital_parameters.inclination_deg ?? 0) - (secondaryObject.orbital_parameters.inclination_deg ?? 0))).toFixed(4)}&deg; &bull;{' '}
+                      &Delta;RAAN: {(Math.abs((primaryObject.orbital_parameters.raan_deg ?? 0) - (secondaryObject.orbital_parameters.raan_deg ?? 0))).toFixed(4)}&deg; &bull;{' '}
+                      &Delta;Anomaly: {(Math.abs((primaryObject.orbital_parameters.mean_anomaly_deg ?? 0) - (secondaryObject.orbital_parameters.mean_anomaly_deg ?? 0))).toFixed(4)}&deg;
+                      {isCoOrbitalPair && (
+                        <span className="block mt-1 text-[#64748b]">
+                          (Co-planar orbit with minor differential node &amp; phase offset causing close approach)
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

@@ -1,19 +1,248 @@
 /**
  * GlobeView.tsx
  *
- * Bridge component connecting OrbitGuard real astrodynamics telemetry to TacticalGlobe3D.
- * Consumes:
- *   - Conjunction events (real WGS-84 encounter locations)
- *   - SGP4 orbital ephemeris trajectories (lat/lon time-series)
- *   - Primary & Secondary object real instantaneous positions
- *   - Strict aerospace compliance: never treats Keplerian angles as lat/lon.
+ * Hardware-accelerated 3D WebGL Earth visualization powered by Three.js & React Three Fiber.
+ * Features:
+ *   - Zero CPU polygon re-projection jitter (rendered directly via GPU VBOs at 60 FPS)
+ *   - Perfectly framed camera positioning to prevent clipping on 1600x900 & laptop viewports
+ *   - Real WGS-84 Natural Earth vector coastlines
+ *   - SGP4 ephemeris trajectories for Primary (Cyan) and Secondary (Amber/Red) interceptors
+ *   - Pulsing encounter beacon at Time of Closest Approach (TCA)
+ *   - Selective satellite markers with zero label collision
+ *   - OrbitControls with smooth damping and bounded zoom
  */
 
-import React, { useMemo } from 'react';
-import { TacticalGlobe3D } from './TacticalGlobe3D';
-import type { TacticalGlobeMarker, TacticalTrajectory } from './TacticalGlobe3D';
+import React, { useMemo, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
+import worldLandData from '../../assets/world-land.json';
 import type { ConjunctionEvent, EphemerisTrajectory } from '../../api/types';
-import { isSyntheticEvent } from '../../api/formatters';
+
+const SPHERE_RADIUS = 2.0;
+
+/**
+ * Maps geodetic WGS-84 (lat, lon, alt) coordinates to Cartesian 3D Sphere Vector.
+ */
+function latLonToVector3(
+  latDeg: number,
+  lonDeg: number,
+  altKm = 400,
+  radiusBase = SPHERE_RADIUS
+): THREE.Vector3 {
+  const phi = (90 - latDeg) * (Math.PI / 180);
+  const theta = (lonDeg + 180) * (Math.PI / 180);
+  // Scale LEO altitude gently for clear visual separation without clipping
+  const r = radiusBase + Math.min(0.55, (altKm / 2000) * 0.4);
+
+  const x = -(r * Math.sin(phi) * Math.cos(theta));
+  const z = r * Math.sin(phi) * Math.sin(theta);
+  const y = r * Math.cos(phi);
+  return new THREE.Vector3(x, y, z);
+}
+
+// Custom line primitive component
+function ThreeLine({
+  points,
+  color,
+  opacity = 0.85
+}: {
+  points: THREE.Vector3[];
+  color: string;
+  opacity?: number;
+}) {
+  const lineObj = useMemo(() => {
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({
+      color: new THREE.Color(color),
+      transparent: opacity < 1.0,
+      opacity,
+      linewidth: 1
+    });
+    return new THREE.Line(geometry, material);
+  }, [points, color, opacity]);
+
+  return <primitive object={lineObj} />;
+}
+
+// Hardware-accelerated Earth sphere with Natural Earth vector coastlines
+function TacticalEarth({ showOutlines = true }: { showOutlines?: boolean }) {
+  const earthRef = useRef<THREE.Group>(null);
+
+  const lineSegments = useMemo(() => {
+    const segments: THREE.Vector3[][] = [];
+    if (!worldLandData || !worldLandData.features) return segments;
+
+    for (const feature of worldLandData.features as any[]) {
+      const geom = feature.geometry;
+      if (!geom) continue;
+
+      if (geom.type === 'LineString') {
+        const pts: THREE.Vector3[] = geom.coordinates.map((c: [number, number]) =>
+          latLonToVector3(c[1], c[0], 0, SPHERE_RADIUS * 1.001)
+        );
+        segments.push(pts);
+      } else if (geom.type === 'MultiLineString') {
+        for (const line of geom.coordinates) {
+          const pts: THREE.Vector3[] = line.map((c: [number, number]) =>
+            latLonToVector3(c[1], c[0], 0, SPHERE_RADIUS * 1.001)
+          );
+          segments.push(pts);
+        }
+      } else if (geom.type === 'Polygon') {
+        for (const ring of geom.coordinates) {
+          const pts: THREE.Vector3[] = ring.map((c: [number, number]) =>
+            latLonToVector3(c[1], c[0], 0, SPHERE_RADIUS * 1.001)
+          );
+          segments.push(pts);
+        }
+      }
+    }
+    return segments;
+  }, []);
+
+  return (
+    <group ref={earthRef}>
+      {/* 1. Deep-space Navy Earth Core */}
+      <mesh>
+        <sphereGeometry args={[SPHERE_RADIUS, 64, 64]} />
+        <meshBasicMaterial color="#070c16" />
+      </mesh>
+
+      {/* 2. Equator reference ring */}
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[SPHERE_RADIUS * 1.001, SPHERE_RADIUS * 1.003, 64]} />
+        <meshBasicMaterial color="#16253b" side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* 3. Subtle Latitude/Longitude Graticule */}
+      <mesh>
+        <sphereGeometry args={[SPHERE_RADIUS * 1.0015, 24, 16]} />
+        <meshBasicMaterial color="#132035" wireframe transparent opacity={0.3} />
+      </mesh>
+
+      {/* 4. Natural Earth continental coastlines */}
+      {showOutlines &&
+        lineSegments.map((pts, i) => (
+          <ThreeLine
+            key={`coastline-${i}`}
+            points={pts}
+            color="#2a3f5a"
+            opacity={0.8}
+          />
+        ))}
+    </group>
+  );
+}
+
+// 3D SGP4 Orbital Ephemeris Trajectory
+function TrajectoryLine({
+  trajectory,
+  color,
+  opacity = 0.9
+}: {
+  trajectory: EphemerisTrajectory;
+  color: string;
+  opacity?: number;
+}) {
+  const linePoints = useMemo(() => {
+    const pts: THREE.Vector3[] = [];
+    if (!trajectory || !trajectory.points) return pts;
+    for (const pt of trajectory.points) {
+      if (pt.is_valid && pt.lat_deg !== null && pt.lon_deg !== null) {
+        pts.push(latLonToVector3(pt.lat_deg, pt.lon_deg, pt.alt_km || 400));
+      }
+    }
+    return pts;
+  }, [trajectory]);
+
+  if (linePoints.length < 2) return null;
+  return <ThreeLine points={linePoints} color={color} opacity={opacity} />;
+}
+
+// Instantaneous Satellite Position Marker (No text collision)
+function SatelliteMarker({
+  lat,
+  lon,
+  altKm,
+  color,
+  size = 0.038,
+  isHighlighted = false
+}: {
+  lat: number;
+  lon: number;
+  altKm: number;
+  color: string;
+  size?: number;
+  isHighlighted?: boolean;
+}) {
+  const pos = useMemo(() => latLonToVector3(lat, lon, altKm), [lat, lon, altKm]);
+
+  return (
+    <group position={pos}>
+      <mesh>
+        <sphereGeometry args={[size, 16, 16]} />
+        <meshBasicMaterial color={color} />
+      </mesh>
+      {/* Soft luminous halo */}
+      <mesh>
+        <sphereGeometry args={[size * (isHighlighted ? 2.0 : 1.4), 16, 16]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={isHighlighted ? 0.45 : 0.2}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+// Encounter Beacon at Time of Closest Approach (TCA)
+function EncounterBeacon({
+  lat,
+  lon,
+  altKm,
+  tier
+}: {
+  lat: number;
+  lon: number;
+  altKm: number;
+  tier: string;
+}) {
+  const pos = useMemo(() => latLonToVector3(lat, lon, altKm), [lat, lon, altKm]);
+  const ringRef = useRef<THREE.Mesh>(null);
+
+  const beaconColor =
+    tier === 'CRITICAL'
+      ? '#ef4444'
+      : tier === 'WARNING'
+      ? '#f59e0b'
+      : tier === 'WATCH'
+      ? '#eab308'
+      : '#10b981';
+
+  useFrame(({ clock }) => {
+    if (ringRef.current) {
+      const scale = 1.0 + Math.sin(clock.getElapsedTime() * 3.5) * 0.35;
+      ringRef.current.scale.set(scale, scale, scale);
+    }
+  });
+
+  return (
+    <group position={pos}>
+      {/* Core beacon dot */}
+      <mesh>
+        <sphereGeometry args={[0.048, 16, 16]} />
+        <meshBasicMaterial color={beaconColor} />
+      </mesh>
+      {/* Pulsing encounter proximity shell */}
+      <mesh ref={ringRef}>
+        <sphereGeometry args={[0.095, 16, 16]} />
+        <meshBasicMaterial color={beaconColor} transparent opacity={0.35} wireframe />
+      </mesh>
+    </group>
+  );
+}
 
 export interface GlobeViewProps {
   selectedEvent: ConjunctionEvent | null;
@@ -42,193 +271,154 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
   showOrbits = true,
   allSatellites = []
 }) => {
-  // Convert SGP4 trajectories into TacticalGlobe format
-  const trajectories: TacticalTrajectory[] = useMemo(() => {
-    const list: TacticalTrajectory[] = [];
-    if (!showOrbits) return list;
-
-    if (primaryTrajectory && primaryTrajectory.points) {
-      const validPoints = primaryTrajectory.points
-        .filter((p) => p.is_valid && p.lat_deg !== null && p.lon_deg !== null)
-        .map((p) => ({ lat: p.lat_deg as number, lon: p.lon_deg as number }));
-
-      if (validPoints.length >= 2) {
-        list.push({
-          id: `traj-primary-${primaryTrajectory.norad_id}`,
-          name: `${primaryTrajectory.name} Orbit`,
-          color: '#38bdf8',
-          opacity: 0.9,
-          strokeWidth: 1.2,
-          points: validPoints
-        });
-      }
+  const secondaryColor = useMemo(() => {
+    if (!selectedEvent) return '#f59e0b';
+    switch (selectedEvent.screening_tier) {
+      case 'CRITICAL':
+        return '#ef4444';
+      case 'WARNING':
+        return '#f59e0b';
+      case 'WATCH':
+        return '#eab308';
+      default:
+        return '#10b981';
     }
+  }, [selectedEvent]);
 
-    if (secondaryTrajectory && secondaryTrajectory.points) {
-      const validPoints = secondaryTrajectory.points
-        .filter((p) => p.is_valid && p.lat_deg !== null && p.lon_deg !== null)
-        .map((p) => ({ lat: p.lat_deg as number, lon: p.lon_deg as number }));
-
-      if (validPoints.length >= 2) {
-        const tierCol =
-          selectedEvent?.screening_tier === 'CRITICAL'
-            ? '#ef4444'
-            : selectedEvent?.screening_tier === 'WARNING'
-            ? '#f59e0b'
-            : '#eab308';
-
-        list.push({
-          id: `traj-secondary-${secondaryTrajectory.norad_id}`,
-          name: `${secondaryTrajectory.name} Orbit`,
-          color: tierCol,
-          opacity: 0.85,
-          strokeWidth: 1.2,
-          dashArray: '3,3',
-          points: validPoints
-        });
-      }
-    }
-
-    return list;
-  }, [primaryTrajectory, secondaryTrajectory, selectedEvent, showOrbits]);
-
-  // Construct real markers from verified backend coordinates
-  const markers: TacticalGlobeMarker[] = useMemo(() => {
-    const list: TacticalGlobeMarker[] = [];
-
-    // 1. Encounter beacon markers for all screened conjunction events
-    for (const ev of events) {
-      const isSelected = selectedEvent?.event_id === ev.event_id;
-      const tierColor =
-        ev.screening_tier === 'CRITICAL'
-          ? '#ef4444'
-          : ev.screening_tier === 'WARNING'
-          ? '#f59e0b'
-          : ev.screening_tier === 'WATCH'
-          ? '#eab308'
-          : '#10b981';
-
-      const isSim = isSyntheticEvent(ev);
-
-      list.push({
-        id: `event-${ev.event_id}`,
-        label: isSelected
-          ? `TCA: ${ev.primary_object.name}`
-          : `${ev.primary_object.name} / ${ev.secondary_object.name}`,
-        showLabel: isSelected, // Only show text label for the active selected encounter
-        description: `Miss Distance: ${ev.miss_distance_km.toFixed(3)} km\nRel Speed: ${ev.relative_speed_km_s.toFixed(2)} km/s\nAlt: ${ev.encounter_location_wgs84.altitude_km.toFixed(1)} km\nTCA: ${ev.tca_utc}${isSim ? '\nType: SIMULATED BENCHMARK' : ''}`,
-        latitude: ev.encounter_location_wgs84.latitude_deg,
-        longitude: ev.encounter_location_wgs84.longitude_deg,
-        color: tierColor,
-        size: isSelected ? 6.5 : 4,
-        isPulsing: isSelected || ev.screening_tier === 'CRITICAL',
-        objectType: 'CONJUNCTION',
-        badge: isSim ? `${ev.screening_tier} TCA [SIMULATED]` : `${ev.screening_tier} TCA`,
-        onClick: () => onSelectEvent && onSelectEvent(ev)
-      });
-    }
-
-    // 2. Real instantaneous position of Selected Primary Object (from real SGP4 ephemeris)
-    if (primaryTrajectory && primaryTrajectory.points && primaryTrajectory.points.length > 0) {
-      const p0 = primaryTrajectory.points[0];
-      if (p0.is_valid && p0.lat_deg !== null && p0.lon_deg !== null) {
-        list.push({
-          id: `sat-primary-${primaryTrajectory.norad_id}`,
-          label: `${primaryTrajectory.name}`,
-          showLabel: true,
-          description: `NORAD ID: ${primaryTrajectory.norad_id}\nPropagated Lat: ${p0.lat_deg.toFixed(2)}°\nLon: ${p0.lon_deg.toFixed(2)}°\nAlt: ${p0.alt_km?.toFixed(1) ?? 'N/A'} km\nStatus: SGP4 VALID`,
-          latitude: p0.lat_deg,
-          longitude: p0.lon_deg,
-          color: '#38bdf8',
-          size: 4.8,
-          isPulsing: true,
-          objectType: 'PAYLOAD',
-          badge: 'PRIMARY PAYLOAD (NOW)'
-        });
-      }
-    }
-
-    // 3. Real instantaneous position of Selected Secondary Object (from real SGP4 ephemeris)
-    if (secondaryTrajectory && secondaryTrajectory.points && secondaryTrajectory.points.length > 0) {
-      const p0 = secondaryTrajectory.points[0];
-      if (p0.is_valid && p0.lat_deg !== null && p0.lon_deg !== null) {
-        const secType = selectedEvent?.secondary_object.type ?? 'UNKNOWN';
-        const typeCol =
-          secType === 'DEBRIS'
-            ? '#ef4444'
-            : secType === 'ROCKET_BODY'
-            ? '#f59e0b'
-            : '#a855f7';
-
-        list.push({
-          id: `sat-secondary-${secondaryTrajectory.norad_id}`,
-          label: `${secondaryTrajectory.name}`,
-          showLabel: true,
-          description: `NORAD ID: ${secondaryTrajectory.norad_id}\nType: ${secType}\nPropagated Lat: ${p0.lat_deg.toFixed(2)}°\nLon: ${p0.lon_deg.toFixed(2)}°\nAlt: ${p0.alt_km?.toFixed(1) ?? 'N/A'} km\nStatus: SGP4 VALID`,
-          latitude: p0.lat_deg,
-          longitude: p0.lon_deg,
-          color: typeCol,
-          size: 4.8,
-          isPulsing: true,
-          objectType: secType as any,
-          badge: `CHASER ${secType} (NOW)`
-        });
-      }
-    }
-
-    // 4. Background satellite catalog markers (unselected — no permanent labels to avoid clutter)
-    for (const sat of allSatellites) {
-      if (
-        sat.norad_id === primaryTrajectory?.norad_id ||
-        sat.norad_id === secondaryTrajectory?.norad_id
-      ) {
-        continue;
-      }
-      list.push({
-        id: `catalog-${sat.norad_id}`,
-        label: sat.name,
-        showLabel: false, // Hidden by default, visible on hover tooltip
-        description: `NORAD: ${sat.norad_id}\nLat: ${sat.lat.toFixed(2)}°\nLon: ${sat.lon.toFixed(2)}°\nAlt: ${sat.alt.toFixed(0)} km`,
-        latitude: sat.lat,
-        longitude: sat.lon,
-        color: '#475569',
-        size: 2.2,
-        isPulsing: false,
-        objectType: 'PAYLOAD',
-        badge: 'CATALOG SATELLITE'
-      });
-    }
-
-    return list;
-  }, [events, selectedEvent, primaryTrajectory, secondaryTrajectory, onSelectEvent, allSatellites]);
+  // Extract instantaneous position for primary object from ephemeris
+  const primaryP0 = primaryTrajectory?.points?.[0];
+  // Extract instantaneous position for secondary object from ephemeris
+  const secondaryP0 = secondaryTrajectory?.points?.[0];
 
   return (
-    <div className="w-full h-full relative bg-[#05080e]">
-      {/* Tactical SVG 3D Orthographic Globe */}
-      <TacticalGlobe3D
-        markers={markers}
-        trajectories={trajectories}
-        showOutlines={showOutlines}
-        showOrbits={showOrbits}
-        showGrid={true}
-        showStars={true}
-        autoRotate={true}
-        autoRotateSpeed={2.5}
-        rotateY={18}
-        glowColor="#1d4ed8"
-        glowIntensity={0.15}
-        oceanColor="#06090e"
-        landFill="#0c1219"
-        landStroke="#1e293b"
-        strokeWidth={0.55}
-        hoverColor="#17253b"
-        className="w-full h-full"
-      />
+    <div className="w-full h-full relative bg-[#05080e] overflow-hidden select-none">
+      {/* 3D WebGL Canvas — Hardware-accelerated, responsive, zero clipping */}
+      <Canvas
+        camera={{ position: [0, 1.25, 4.0], fov: 40 }}
+        style={{ width: '100%', height: '100%', background: '#05080e' }}
+      >
+        <color attach="background" args={['#05080e']} />
+        <ambientLight intensity={0.5} />
 
-      {/* Discreet Unobtrusive Bottom Legend & Status Bar */}
-      <div className="absolute bottom-3 left-4 pointer-events-none flex items-center gap-3.5 text-[11px] font-mono bg-[#090e18]/85 px-3 py-1.5 rounded border border-[#172236]/80 backdrop-blur-md shadow-lg z-20">
+        {/* Earth Sphere with WGS-84 Coastlines */}
+        <TacticalEarth showOutlines={showOutlines} />
+
+        {/* Background Constellation Satellites (Rendered as tiny discrete dots without text collisions) */}
+        {allSatellites.map((sat) => {
+          const isPrimary = selectedEvent?.primary_object.norad_id === sat.norad_id;
+          const isSecondary = selectedEvent?.secondary_object.norad_id === sat.norad_id;
+          if (isPrimary || isSecondary) return null; // Rendered with higher fidelity below
+
+          return (
+            <SatelliteMarker
+              key={`cat-sat-${sat.norad_id}`}
+              lat={sat.lat}
+              lon={sat.lon}
+              altKm={sat.alt}
+              color="#334155"
+              size={0.016}
+              isHighlighted={false}
+            />
+          );
+        })}
+
+        {/* Candidate Encounter Beacons on the Globe */}
+        {events.map((ev) => {
+          const isSelected = selectedEvent?.event_id === ev.event_id;
+          if (isSelected) return null; // Rendered with pulsing shell below
+          if (!ev.encounter_location_wgs84) return null;
+          return (
+            <group
+              key={`enc-${ev.event_id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onSelectEvent) onSelectEvent(ev);
+              }}
+            >
+              <SatelliteMarker
+                lat={ev.encounter_location_wgs84.latitude_deg}
+                lon={ev.encounter_location_wgs84.longitude_deg}
+                altKm={ev.encounter_location_wgs84.altitude_km}
+                color={
+                  ev.screening_tier === 'CRITICAL'
+                    ? '#ef4444'
+                    : ev.screening_tier === 'WARNING'
+                    ? '#f59e0b'
+                    : '#eab308'
+                }
+                size={0.03}
+                isHighlighted={false}
+              />
+            </group>
+          );
+        })}
+
+        {/* Selected Primary Object Instantaneous Position Marker */}
+        {primaryP0 && primaryP0.is_valid && primaryP0.lat_deg !== null && primaryP0.lon_deg !== null && (
+          <SatelliteMarker
+            lat={primaryP0.lat_deg}
+            lon={primaryP0.lon_deg}
+            altKm={primaryP0.alt_km || 400}
+            color="#00e5ff"
+            size={0.045}
+            isHighlighted={true}
+          />
+        )}
+
+        {/* Selected Secondary Object Instantaneous Position Marker */}
+        {secondaryP0 && secondaryP0.is_valid && secondaryP0.lat_deg !== null && secondaryP0.lon_deg !== null && (
+          <SatelliteMarker
+            lat={secondaryP0.lat_deg}
+            lon={secondaryP0.lon_deg}
+            altKm={secondaryP0.alt_km || 400}
+            color={secondaryColor}
+            size={0.045}
+            isHighlighted={true}
+          />
+        )}
+
+        {/* Primary SGP4 Orbital Trajectory (Cyan) */}
+        {showOrbits && primaryTrajectory && (
+          <TrajectoryLine
+            trajectory={primaryTrajectory}
+            color="#00e5ff"
+            opacity={0.9}
+          />
+        )}
+
+        {/* Secondary SGP4 Orbital Trajectory (Amber / Red) */}
+        {showOrbits && secondaryTrajectory && (
+          <TrajectoryLine
+            trajectory={secondaryTrajectory}
+            color={secondaryColor}
+            opacity={0.85}
+          />
+        )}
+
+        {/* Pulsing Encounter Beacon at Time of Closest Approach (TCA) */}
+        {selectedEvent && selectedEvent.encounter_location_wgs84 && (
+          <EncounterBeacon
+            lat={selectedEvent.encounter_location_wgs84.latitude_deg}
+            lon={selectedEvent.encounter_location_wgs84.longitude_deg}
+            altKm={selectedEvent.encounter_location_wgs84.altitude_km}
+            tier={selectedEvent.screening_tier}
+          />
+        )}
+
+        {/* Smooth OrbitControls with Damping & Bounded Zoom */}
+        <OrbitControls
+          enableDamping
+          dampingFactor={0.05}
+          rotateSpeed={0.65}
+          minDistance={2.6}
+          maxDistance={8.5}
+        />
+      </Canvas>
+
+      {/* Discrete, Compact Status & Astrodynamics Legend Bar (Bottom-Left) */}
+      <div className="absolute bottom-3.5 left-4 pointer-events-none flex items-center gap-3.5 text-[11px] font-mono bg-[#090e18]/85 px-3 py-1.5 rounded border border-[#172236]/80 backdrop-blur-md shadow-lg z-20">
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#38bdf8]" />
+          <span className="w-2 h-2 rounded-full bg-[#00e5ff]" />
           <span className="text-[#cbd5e1] text-[10px]">Primary</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -237,10 +427,10 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[#ef4444]" />
-          <span className="text-[#cbd5e1] text-[10px]">Conjunction TCA</span>
+          <span className="text-[#cbd5e1] text-[10px]">TCA Beacon</span>
         </div>
-        <span className="text-[#334155]">•</span>
-        <span className="text-[#64748b] text-[10px]">WGS-84 / TEME SGP4</span>
+        <span className="text-[#334155]">&bull;</span>
+        <span className="text-[#64748b] text-[10px]">TEME Inertial &bull; WGS-84 Coastlines</span>
       </div>
     </div>
   );

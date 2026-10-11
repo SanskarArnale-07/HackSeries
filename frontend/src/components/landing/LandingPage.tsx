@@ -62,15 +62,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) =>
             screening.
           </p>
 
-          {/* Primary Call to Action */}
-          <div className="pt-2">
+          {/* Primary Call to Action & Subtle Secondary Navigation */}
+          <div className="pt-2 flex flex-wrap items-center gap-4">
             <button
               onClick={onEnterDashboard}
               className="px-7 py-3.5 rounded bg-[#00e5ff] hover:bg-[#38bdf8] text-[#05080e] font-semibold text-sm transition-all shadow-[0_0_30px_rgba(0,229,255,0.25)] hover:shadow-[0_0_45px_rgba(0,229,255,0.45)] flex items-center gap-3 group cursor-pointer"
             >
-              <span>Explore Orbital Intelligence</span>
+              <span>Enter Dashboard</span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </button>
+
+            <a
+              href="#about"
+              onClick={(e) => {
+                e.preventDefault();
+                alert('TRAJACTRA Architecture: Bounded LEO catalog (100 objects) screened over a 24h lookahead window via analytical SGP4 propagation and golden-section search. Strict Rule 1 (0% ML) and Rule 2 (No Pc claims) compliance.');
+              }}
+              className="px-4 py-3 rounded text-xs font-mono text-[#94a3b8] hover:text-[#00e5ff] border border-[#141e2e] hover:border-[#00e5ff]/30 bg-[#080d16]/60 backdrop-blur-md transition-all cursor-pointer"
+            >
+              Platform Overview
+            </a>
           </div>
 
           {/* Scientific Integrity Reassurance */}

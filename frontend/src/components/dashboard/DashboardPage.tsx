@@ -19,6 +19,9 @@ import type {
   OrbitalObject,
   EphemerisTrajectory
 } from '../../api/types';
+import { SpaceWeatherView } from '../weather/SpaceWeatherView';
+import { ModelMonitorView } from './ModelMonitorView';
+import { ReportsView } from './ReportsView';
 import { Eye, Orbit, AlertCircle, PanelRightOpen } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -35,6 +38,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
   const [selectedEvent, setSelectedEvent] = useState<ConjunctionEvent | null>(null);
   const [selectedCatalogObject, setSelectedCatalogObject] = useState<OrbitalObject | null>(null);
   const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(true);
+  const [isWeatherOpen, setIsWeatherOpen] = useState<boolean>(false);
+  const [isModelOpen, setIsModelOpen] = useState<boolean>(false);
+  const [isReportsOpen, setIsReportsOpen] = useState<boolean>(false);
 
   const [primaryTrajectory, setPrimaryTrajectory] = useState<EphemerisTrajectory | null>(null);
   const [secondaryTrajectory, setSecondaryTrajectory] = useState<EphemerisTrajectory | null>(null);
@@ -128,6 +134,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
       <Header
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab)}
+        onOpenWeather={() => setIsWeatherOpen(true)}
+        onOpenModel={() => setIsModelOpen(true)}
+        onOpenReports={() => setIsReportsOpen(true)}
         health={health}
         onRefresh={loadData}
         isRefreshing={isLoading}
@@ -246,6 +255,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
 
       {/* 4. Aerospace Scientific Disclaimer Footer */}
       <DisclaimerBanner />
+
+      {/* 5. Space Weather Diagnostics Modal */}
+      {isWeatherOpen && <SpaceWeatherView onClose={() => setIsWeatherOpen(false)} />}
+
+      {/* 6. SGP4 Astrodynamics Architecture Modal */}
+      {isModelOpen && <ModelMonitorView onClose={() => setIsModelOpen(false)} />}
+
+      {/* 7. Conjunction Screening Audit Reports Modal */}
+      {isReportsOpen && (
+        <ReportsView
+          conjunctionsData={conjunctionsData}
+          totalObjects={objects.length}
+          onClose={() => setIsReportsOpen(false)}
+        />
+      )}
     </div>
   );
 };
