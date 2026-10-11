@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { ConjunctionsResponse } from '../../api/types';
 import { ShieldAlert, Clock, Satellite, Activity } from 'lucide-react';
+import { isSyntheticEvent } from '../../api/formatters';
 
 interface MetricsBarProps {
   totalObjects: number;
@@ -11,7 +12,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({
   totalObjects,
   conjunctionsData
 }) => {
-  const events = conjunctionsData?.events || [];
+  const events = useMemo(() => conjunctionsData?.events || [], [conjunctionsData?.events]);
 
   // Earliest TCA from real event data
   const nextTcaUtc = useMemo(() => {
@@ -110,16 +111,21 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({
                 >
                   {highestPriorityEncounter.screening_tier}
                 </span>
+                {isSyntheticEvent(highestPriorityEncounter) && (
+                  <span className="px-1 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/90 text-amber-300 border border-amber-500/50 leading-none">
+                    SIMULATED
+                  </span>
+                )}
                 <span className="text-sm font-mono font-bold text-[#f1f5f9] leading-none">
-                  {highestPriorityEncounter.miss_distance_km.toFixed(2)} km
+                  {highestPriorityEncounter.miss_distance_km.toFixed(3)} km
                 </span>
                 <span className="text-[11px] text-[#64748b] hidden xl:inline leading-none truncate max-w-[160px]" title={`${highestPriorityEncounter.primary_object.name} ↔ ${highestPriorityEncounter.secondary_object.name}`}>
                   ({highestPriorityEncounter.primary_object.name} &harr; {highestPriorityEncounter.secondary_object.name})
                 </span>
               </div>
             ) : (
-              <span className="text-xs font-mono text-[#10b981] font-semibold leading-none">
-                NOMINAL (No Close Approaches)
+              <span className="text-xs font-mono text-emerald-400 font-semibold leading-none">
+                NOMINAL (0 Close Approaches Detected)
               </span>
             )}
           </div>

@@ -13,6 +13,7 @@ import React, { useMemo } from 'react';
 import { TacticalGlobe3D } from './TacticalGlobe3D';
 import type { TacticalGlobeMarker, TacticalTrajectory } from './TacticalGlobe3D';
 import type { ConjunctionEvent, EphemerisTrajectory } from '../../api/types';
+import { isSyntheticEvent } from '../../api/formatters';
 
 export interface GlobeViewProps {
   selectedEvent: ConjunctionEvent | null;
@@ -107,20 +108,22 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
           ? '#eab308'
           : '#10b981';
 
+      const isSim = isSyntheticEvent(ev);
+
       list.push({
         id: `event-${ev.event_id}`,
         label: isSelected
           ? `TCA: ${ev.primary_object.name}`
           : `${ev.primary_object.name} / ${ev.secondary_object.name}`,
         showLabel: isSelected, // Only show text label for the active selected encounter
-        description: `Miss Distance: ${ev.miss_distance_km.toFixed(3)} km\nRel Speed: ${ev.relative_speed_km_s.toFixed(2)} km/s\nAlt: ${ev.encounter_location_wgs84.altitude_km.toFixed(1)} km\nTCA: ${ev.tca_utc}`,
+        description: `Miss Distance: ${ev.miss_distance_km.toFixed(3)} km\nRel Speed: ${ev.relative_speed_km_s.toFixed(2)} km/s\nAlt: ${ev.encounter_location_wgs84.altitude_km.toFixed(1)} km\nTCA: ${ev.tca_utc}${isSim ? '\nType: SIMULATED BENCHMARK' : ''}`,
         latitude: ev.encounter_location_wgs84.latitude_deg,
         longitude: ev.encounter_location_wgs84.longitude_deg,
         color: tierColor,
-        size: isSelected ? 6 : 4,
+        size: isSelected ? 6.5 : 4,
         isPulsing: isSelected || ev.screening_tier === 'CRITICAL',
         objectType: 'CONJUNCTION',
-        badge: `${ev.screening_tier} TCA`,
+        badge: isSim ? `${ev.screening_tier} TCA [SIMULATED]` : `${ev.screening_tier} TCA`,
         onClick: () => onSelectEvent && onSelectEvent(ev)
       });
     }
@@ -212,8 +215,8 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
         autoRotate={true}
         autoRotateSpeed={2.5}
         rotateY={18}
-        glowColor="#2563eb"
-        glowIntensity={0.22}
+        glowColor="#1d4ed8"
+        glowIntensity={0.15}
         oceanColor="#06090e"
         landFill="#0c1219"
         landStroke="#1e293b"

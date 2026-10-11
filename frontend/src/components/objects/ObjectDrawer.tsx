@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
 import type { ConjunctionEvent, OrbitalObject } from '../../api/types';
-import { X, ChevronDown, ChevronRight, Globe, Navigation, Orbit, ShieldAlert } from 'lucide-react';
-import { formatRelativeSpeed, formatUtcTimestamp } from '../../api/formatters';
+import { X, ChevronDown, ChevronRight, Globe, Navigation, Orbit, ShieldAlert, AlertTriangle } from 'lucide-react';
+import {
+  formatRelativeSpeed,
+  formatUtcTimestamp,
+  isSyntheticEvent,
+  isSyntheticObject,
+  formatVectorComponent,
+  formatDegree,
+  formatKm
+} from '../../api/formatters';
 
 interface ObjectDrawerProps {
   event: ConjunctionEvent | null;
@@ -18,7 +26,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
   selectedCatalogObject,
   onClose
 }) => {
-  // Advanced orbital telemetry collapsed by default as required
+  // Advanced orbital telemetry collapsed by default to prevent telemetry wall
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   if (!event && !selectedCatalogObject) return null;
@@ -29,30 +37,32 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
         return {
           label: 'CRITICAL',
           desc: 'Geometric separation < 5.0 km',
-          badge: 'text-red-400 bg-red-950/80 border-red-500/50'
+          badge: 'text-red-300 bg-red-950/80 border-red-500/50'
         };
       case 'WARNING':
         return {
           label: 'WARNING',
           desc: 'Geometric separation 5.0 - 15.0 km',
-          badge: 'text-amber-400 bg-amber-950/80 border-amber-500/50'
+          badge: 'text-amber-300 bg-amber-950/80 border-amber-500/50'
         };
       case 'WATCH':
         return {
           label: 'WATCH',
           desc: 'Geometric separation 15.0 - 30.0 km',
-          badge: 'text-yellow-400 bg-yellow-950/80 border-yellow-500/50'
+          badge: 'text-yellow-300 bg-yellow-950/80 border-yellow-500/50'
         };
       default:
         return {
           label: 'MONITOR',
           desc: 'Geometric separation 30.0 - 50.0 km',
-          badge: 'text-emerald-400 bg-emerald-950/80 border-emerald-500/50'
+          badge: 'text-emerald-300 bg-emerald-950/80 border-emerald-500/50'
         };
     }
   };
 
-  // Check if primary and secondary objects are co-orbital (e.g. synthetic intercept test pair)
+  const isSimulated = event ? isSyntheticEvent(event) : isSyntheticObject(selectedCatalogObject);
+
+  // Check if primary and secondary objects are co-orbital
   const isCoOrbitalPair = Boolean(
     primaryObject &&
       secondaryObject &&
@@ -84,6 +94,19 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
       </div>
 
       <div className="p-4 space-y-4 overflow-y-auto flex-1">
+        {/* Visible simulation banner if synthetic benchmark target */}
+        {isSimulated && (
+          <div className="p-3 rounded bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs space-y-1">
+            <div className="font-bold font-mono text-[11px] text-amber-400 flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+              <span>SIMULATED BENCHMARK TARGET</span>
+            </div>
+            <p className="text-[10px] text-amber-300/80 leading-relaxed font-sans">
+              Analytical test scenario generated from benchmark TLEs (NORAD #99001 / #99002) for screening verification. Not a verified real-world conjunction.
+            </p>
+          </div>
+        )}
+
         {/* If Conjunction Encounter is Selected */}
         {event && (
           <>
@@ -120,7 +143,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
               );
             })()}
 
-            {/* 2. CORE ENCOUNTER KINEMATICS */}
+            {/* 2. CORE ENCOUNTER KINEMATICS & TIMING */}
             <div className="p-3.5 rounded bg-[#0b1222] border border-[#16233b] space-y-3">
               <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#64748b] block">
                 Kinematics &amp; Timing
@@ -182,16 +205,17 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
               </div>
             </div>
 
-            {/* 4. EXPANDABLE "ADVANCED ORBITAL TELEMETRY" */}
+            {/* 4. EXPANDABLE "ADVANCED DETAILS" (Collapsed by Default) */}
             <div className="pt-1">
               <button
                 onClick={() => setShowAdvanced((prev) => !prev)}
                 className="w-full py-2.5 px-3 rounded bg-[#0b1222] hover:bg-[#101a30] border border-[#16233b] flex items-center justify-between text-left text-xs transition-all cursor-pointer group"
+                aria-expanded={showAdvanced}
               >
                 <div className="flex items-center gap-2">
                   <Orbit className="w-3.5 h-3.5 text-[#38bdf8]" />
                   <span className="font-medium text-xs text-[#cbd5e1] group-hover:text-white transition-colors">
-                    Advanced Orbital Telemetry
+                    Advanced Details
                   </span>
                 </div>
                 {showAdvanced ? (
@@ -203,34 +227,34 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
 
               {showAdvanced && (
                 <div className="mt-2.5 space-y-2.5 font-mono text-xs">
-                  {/* WGS-84 Coordinates & Astrodynamics Reference Frames */}
+                  {/* Encounter Coordinates & Astrodynamics Reference Frames */}
                   <div className="p-3 rounded bg-[#080d1a] border border-[#141f33] space-y-1.5">
                     <div className="flex items-center gap-1.5 text-[#38bdf8] text-[11px] font-sans font-semibold">
                       <Globe className="w-3.5 h-3.5" />
                       <span>Encounter Coordinates (WGS-84)</span>
                     </div>
                     <div className="text-[11px] text-[#cbd5e1]">
-                      Lat: {event.encounter_location_wgs84?.latitude_deg?.toFixed(4) ?? 'N/A'}&deg; &bull; Lon: {event.encounter_location_wgs84?.longitude_deg?.toFixed(4) ?? 'N/A'}&deg;
+                      Lat: {formatDegree(event.encounter_location_wgs84?.latitude_deg, 4)} &bull; Lon: {formatDegree(event.encounter_location_wgs84?.longitude_deg, 4)}
                     </div>
                     <div className="text-[11px] text-[#cbd5e1]">
-                      Geodetic Alt: {event.encounter_location_wgs84?.altitude_km?.toFixed(2) ?? 'N/A'} km
+                      Geodetic Alt: {formatKm(event.encounter_location_wgs84?.altitude_km, 2)}
                     </div>
                     <div className="text-[10px] text-[#64748b] pt-1 border-t border-[#121b2c] leading-relaxed">
                       Frames: TEME Inertial &bull; ECEF (with Coriolis compensation) &bull; WGS-84 (Bowring)
                     </div>
                   </div>
 
-                  {/* Relative Velocity Vector Decomposition */}
+                  {/* Relative Velocity Vector Decomposition (Safely Formatted, Never Substituting 0) */}
                   <div className="p-3 rounded bg-[#080d1a] border border-[#141f33] space-y-1.5">
                     <div className="flex items-center gap-1.5 text-amber-400 text-[11px] font-sans font-semibold">
                       <Navigation className="w-3.5 h-3.5" />
                       <span>Relative Velocity Vectors (km/s)</span>
                     </div>
                     <div className="text-[11px] text-[#cbd5e1]">
-                      TEME: [{event.relative_velocity_vector_teme?.vx?.toFixed(4) ?? 0}, {event.relative_velocity_vector_teme?.vy?.toFixed(4) ?? 0}, {event.relative_velocity_vector_teme?.vz?.toFixed(4) ?? 0}]
+                      TEME: [{formatVectorComponent(event.relative_velocity_vector_teme?.vx)}, {formatVectorComponent(event.relative_velocity_vector_teme?.vy)}, {formatVectorComponent(event.relative_velocity_vector_teme?.vz)}]
                     </div>
                     <div className="text-[11px] text-[#94a3b8]">
-                      ECEF: [{event.relative_velocity_vector_ecef?.vx?.toFixed(4) ?? 0}, {event.relative_velocity_vector_ecef?.vy?.toFixed(4) ?? 0}, {event.relative_velocity_vector_ecef?.vz?.toFixed(4) ?? 0}]
+                      ECEF: [{formatVectorComponent(event.relative_velocity_vector_ecef?.vx)}, {formatVectorComponent(event.relative_velocity_vector_ecef?.vy)}, {formatVectorComponent(event.relative_velocity_vector_ecef?.vz)}]
                     </div>
                   </div>
 
@@ -245,16 +269,16 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                         <span className="text-[10px] text-[#64748b]">#{primaryObject.norad_id}</span>
                       </div>
                       <div className="text-[11px] text-[#cbd5e1]">
-                        Inc: {primaryObject.orbital_parameters.inclination_deg}&deg; &bull; Ecc: {primaryObject.orbital_parameters.eccentricity}
+                        Inc: {formatDegree(primaryObject.orbital_parameters.inclination_deg)} &bull; Ecc: {formatVectorComponent(primaryObject.orbital_parameters.eccentricity, 5)}
                       </div>
                       <div className="text-[11px] text-[#cbd5e1]">
-                        Perigee: {primaryObject.orbital_parameters.perigee_altitude_km.toFixed(1)} km &bull; Apogee: {primaryObject.orbital_parameters.apogee_altitude_km.toFixed(1)} km
+                        Perigee: {formatKm(primaryObject.orbital_parameters.perigee_altitude_km, 1)} &bull; Apogee: {formatKm(primaryObject.orbital_parameters.apogee_altitude_km, 1)}
                       </div>
                       <div className="text-[10px] text-[#94a3b8]">
-                        RAAN (&Omega;): {primaryObject.orbital_parameters.raan_deg ?? 0}&deg; &bull; Mean Anomaly: {primaryObject.orbital_parameters.mean_anomaly_deg ?? 0}&deg;
+                        RAAN (&Omega;): {formatDegree(primaryObject.orbital_parameters.raan_deg)} &bull; Mean Anomaly: {formatDegree(primaryObject.orbital_parameters.mean_anomaly_deg)}
                       </div>
                       <div className="text-[10px] text-[#64748b]">
-                        Period: {primaryObject.orbital_parameters.period_minutes.toFixed(2)} min &bull; SMA: {primaryObject.orbital_parameters.semi_major_axis_km.toFixed(1)} km
+                        Period: {primaryObject.orbital_parameters.period_minutes ? `${primaryObject.orbital_parameters.period_minutes.toFixed(2)} min` : 'N/A'} &bull; SMA: {formatKm(primaryObject.orbital_parameters.semi_major_axis_km, 1)}
                       </div>
                     </div>
                   )}
@@ -270,21 +294,21 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                         <span className="text-[10px] text-[#64748b]">#{secondaryObject.norad_id}</span>
                       </div>
                       <div className="text-[11px] text-[#cbd5e1]">
-                        Inc: {secondaryObject.orbital_parameters.inclination_deg}&deg; &bull; Ecc: {secondaryObject.orbital_parameters.eccentricity}
+                        Inc: {formatDegree(secondaryObject.orbital_parameters.inclination_deg)} &bull; Ecc: {formatVectorComponent(secondaryObject.orbital_parameters.eccentricity, 5)}
                       </div>
                       <div className="text-[11px] text-[#cbd5e1]">
-                        Perigee: {secondaryObject.orbital_parameters.perigee_altitude_km.toFixed(1)} km &bull; Apogee: {secondaryObject.orbital_parameters.apogee_altitude_km.toFixed(1)} km
+                        Perigee: {formatKm(secondaryObject.orbital_parameters.perigee_altitude_km, 1)} &bull; Apogee: {formatKm(secondaryObject.orbital_parameters.apogee_altitude_km, 1)}
                       </div>
                       <div className="text-[10px] text-[#94a3b8]">
-                        RAAN (&Omega;): {secondaryObject.orbital_parameters.raan_deg ?? 0}&deg; &bull; Mean Anomaly: {secondaryObject.orbital_parameters.mean_anomaly_deg ?? 0}&deg;
+                        RAAN (&Omega;): {formatDegree(secondaryObject.orbital_parameters.raan_deg)} &bull; Mean Anomaly: {formatDegree(secondaryObject.orbital_parameters.mean_anomaly_deg)}
                       </div>
                       <div className="text-[10px] text-[#64748b]">
-                        Period: {secondaryObject.orbital_parameters.period_minutes.toFixed(2)} min &bull; SMA: {secondaryObject.orbital_parameters.semi_major_axis_km.toFixed(1)} km
+                        Period: {secondaryObject.orbital_parameters.period_minutes ? `${secondaryObject.orbital_parameters.period_minutes.toFixed(2)} min` : 'N/A'} &bull; SMA: {formatKm(secondaryObject.orbital_parameters.semi_major_axis_km, 1)}
                       </div>
                     </div>
                   )}
 
-                  {/* Co-Orbital Synthetic Intercept Diagnostics Note */}
+                  {/* Astrodynamics Diagnostics Note */}
                   {isCoOrbitalPair && (
                     <div className="p-2.5 rounded bg-[#09101c] border border-[#162238] text-[10px] font-mono text-[#94a3b8] leading-relaxed">
                       <strong className="text-[#38bdf8]">Astrodynamics Note:</strong> Co-planar orbit with minor differential RAAN &amp; mean anomaly phase offset resulting in close-approach intercept.
@@ -304,35 +328,74 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
         {/* If Single Catalog Satellite is Selected */}
         {!event && selectedCatalogObject && (
           <div className="space-y-3 text-xs">
-            <div className="p-3 rounded bg-[#0d1424] border border-[#172236] space-y-2">
-              <div className="flex justify-between">
+            {/* Overview Metadata */}
+            <div className="p-3.5 rounded bg-[#0b1222] border border-[#16233b] space-y-2">
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#64748b] block mb-1">
+                Satellite Overview
+              </span>
+              <div className="flex justify-between items-center py-1 border-b border-[#141f33]">
                 <span className="text-[#94a3b8]">NORAD ID</span>
-                <span className="font-mono text-[#00e5ff] font-semibold">#{selectedCatalogObject.norad_id}</span>
+                <span className="font-mono text-[#38bdf8] font-semibold">#{selectedCatalogObject.norad_id}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center py-1 border-b border-[#141f33]">
                 <span className="text-[#94a3b8]">Intl Designator</span>
-                <span className="font-mono text-[#f8fafc]">{selectedCatalogObject.intl_des}</span>
+                <span className="font-mono text-[#f8fafc]">{selectedCatalogObject.intl_des || 'N/A'}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center py-1 border-b border-[#141f33]">
                 <span className="text-[#94a3b8]">Object Type</span>
                 <span className="font-mono text-[#f8fafc]">{selectedCatalogObject.object_type}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center py-1">
                 <span className="text-[#94a3b8]">TLE Epoch Age</span>
                 <span className="font-mono text-[#94a3b8]">{selectedCatalogObject.element_age_days.toFixed(1)} days</span>
               </div>
             </div>
 
-            <div className="p-3 rounded bg-[#0d1424] border border-[#172236] space-y-1.5 font-mono text-xs">
-              <div className="text-[11px] font-sans font-semibold text-[#00e5ff] mb-1">
-                Keplerian Parameters
-              </div>
-              <div className="text-[#cbd5e1]">Inclination: {selectedCatalogObject.orbital_parameters.inclination_deg}&deg;</div>
-              <div className="text-[#cbd5e1]">Eccentricity: {selectedCatalogObject.orbital_parameters.eccentricity}</div>
-              <div className="text-[#94a3b8]">Perigee: {selectedCatalogObject.orbital_parameters.perigee_altitude_km} km</div>
-              <div className="text-[#94a3b8]">Apogee: {selectedCatalogObject.orbital_parameters.apogee_altitude_km} km</div>
-              <div className="text-[#94a3b8]">RAAN (&Omega;): {selectedCatalogObject.orbital_parameters.raan_deg ?? 'N/A'}&deg;</div>
-              <div className="text-[#94a3b8]">Period: {selectedCatalogObject.orbital_parameters.period_minutes} min</div>
+            {/* Collapsible Advanced Keplerian Parameters */}
+            <div className="pt-1">
+              <button
+                onClick={() => setShowAdvanced((prev) => !prev)}
+                className="w-full py-2.5 px-3 rounded bg-[#0b1222] hover:bg-[#101a30] border border-[#16233b] flex items-center justify-between text-left text-xs transition-all cursor-pointer group"
+                aria-expanded={showAdvanced}
+              >
+                <div className="flex items-center gap-2">
+                  <Orbit className="w-3.5 h-3.5 text-[#38bdf8]" />
+                  <span className="font-medium text-xs text-[#cbd5e1] group-hover:text-white transition-colors">
+                    Advanced Orbital Elements
+                  </span>
+                </div>
+                {showAdvanced ? (
+                  <ChevronDown className="w-3.5 h-3.5 text-[#94a3b8]" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 text-[#64748b]" />
+                )}
+              </button>
+
+              {showAdvanced && (
+                <div className="mt-2.5 p-3 rounded bg-[#080d1a] border border-[#141f33] space-y-1.5 font-mono text-xs">
+                  <div className="text-[11px] font-sans font-semibold text-[#38bdf8] mb-1">
+                    Keplerian Parameters
+                  </div>
+                  <div className="text-[#cbd5e1]">
+                    Inclination: {formatDegree(selectedCatalogObject.orbital_parameters.inclination_deg)}
+                  </div>
+                  <div className="text-[#cbd5e1]">
+                    Eccentricity: {formatVectorComponent(selectedCatalogObject.orbital_parameters.eccentricity, 5)}
+                  </div>
+                  <div className="text-[#cbd5e1]">
+                    Perigee: {formatKm(selectedCatalogObject.orbital_parameters.perigee_altitude_km, 1)} &bull; Apogee: {formatKm(selectedCatalogObject.orbital_parameters.apogee_altitude_km, 1)}
+                  </div>
+                  <div className="text-[#94a3b8]">
+                    Semi-Major Axis: {formatKm(selectedCatalogObject.orbital_parameters.semi_major_axis_km, 1)}
+                  </div>
+                  <div className="text-[#94a3b8]">
+                    Period: {selectedCatalogObject.orbital_parameters.period_minutes ? `${selectedCatalogObject.orbital_parameters.period_minutes.toFixed(2)} min` : 'N/A'}
+                  </div>
+                  <div className="text-[#94a3b8]">
+                    RAAN (&Omega;): {formatDegree(selectedCatalogObject.orbital_parameters.raan_deg)} &bull; Mean Anomaly: {formatDegree(selectedCatalogObject.orbital_parameters.mean_anomaly_deg)}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

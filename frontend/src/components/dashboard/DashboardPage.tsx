@@ -44,6 +44,37 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
   const [showOutlines, setShowOutlines] = useState<boolean>(true);
   const [showOrbits, setShowOrbits] = useState<boolean>(true);
 
+  // When an encounter event is selected, fetch ephemeris trajectories for both objects
+  const handleSelectEvent = async (event: ConjunctionEvent) => {
+    setSelectedEvent(event);
+    setSelectedCatalogObject(null);
+    setIsInspectorOpen(true);
+    try {
+      const [primaryTraj, secondaryTraj] = await Promise.all([
+        fetchEphemeris(event.primary_object.norad_id, 60, 2).catch(() => null),
+        fetchEphemeris(event.secondary_object.norad_id, 60, 2).catch(() => null)
+      ]);
+      setPrimaryTrajectory(primaryTraj);
+      setSecondaryTrajectory(secondaryTraj);
+    } catch (err) {
+      console.error('Failed to load ephemeris for selected encounter', err);
+    }
+  };
+
+  // When a catalog satellite is selected, fetch its orbital trajectory
+  const handleSelectCatalogObject = async (obj: OrbitalObject) => {
+    setSelectedCatalogObject(obj);
+    setSelectedEvent(null);
+    setIsInspectorOpen(true);
+    try {
+      const traj = await fetchEphemeris(obj.norad_id, 60, 2).catch(() => null);
+      setPrimaryTrajectory(traj);
+      setSecondaryTrajectory(null);
+    } catch (err) {
+      console.error('Failed to load ephemeris for catalog satellite', err);
+    }
+  };
+
   // Load telemetry, catalog, and screened conjunctions from backend
   const loadData = async () => {
     setIsLoading(true);
@@ -77,58 +108,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // When an encounter event is selected, fetch ephemeris trajectories for both objects
-  const handleSelectEvent = async (event: ConjunctionEvent) => {
-    setSelectedEvent(event);
-    setSelectedCatalogObject(null);
-    setIsInspectorOpen(true);
-    try {
-      const [primaryTraj, secondaryTraj] = await Promise.all([
-        fetchEphemeris(event.primary_object.norad_id, 60, 2).catch(() => null),
-        fetchEphemeris(event.secondary_object.norad_id, 60, 2).catch(() => null)
-      ]);
-      setPrimaryTrajectory(primaryTraj);
-      setSecondaryTrajectory(secondaryTraj);
-    } catch (err) {
-      console.error('Failed to load ephemeris for selected encounter', err);
-    }
-  };
-
-  // When a catalog satellite is selected, fetch its orbital trajectory
-  const handleSelectCatalogObject = async (obj: OrbitalObject) => {
-    setSelectedCatalogObject(obj);
-    setSelectedEvent(null);
-    setIsInspectorOpen(true);
-    try {
-      const traj = await fetchEphemeris(obj.norad_id, 60, 2).catch(() => null);
-      setPrimaryTrajectory(traj);
-      setSecondaryTrajectory(null);
-    } catch (err) {
-      console.error('Failed to load ephemeris for catalog satellite', err);
-    }
-  };
 
   const handleCloseInspector = () => {
     setIsInspectorOpen(false);
   };
-
-  // Map background constellation satellites for 3D globe visualization
-  const allSatellites = objects.slice(0, 50).map((obj) => {
-    const raan = obj.orbital_parameters.raan_deg ?? 0;
-    const ma = obj.orbital_parameters.mean_anomaly_deg ?? 0;
-    const inc = obj.orbital_parameters.inclination_deg;
-    const lat = Math.sin((ma * Math.PI) / 180) * inc;
-    const lon = ((raan + ma) % 360) - 180;
-    return {
-      norad_id: obj.norad_id,
-      name: obj.name,
-      lat,
-      lon,
-      alt: obj.orbital_parameters.perigee_altitude_km
-    };
-  });
 
   const primaryObj = objects.find(
     (o) => o.norad_id === selectedEvent?.primary_object.norad_id
@@ -188,6 +173,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
               selectedEventId={selectedEvent?.event_id || null}
               onSelectEvent={handleSelectEvent}
               isLoading={isLoading}
+              error={error}
             />
           )}
         </div>
@@ -200,7 +186,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
             secondaryTrajectory={secondaryTrajectory}
             events={events}
             onSelectEvent={handleSelectEvent}
-            allSatellites={allSatellites}
             showOutlines={showOutlines}
             showOrbits={showOrbits}
           />

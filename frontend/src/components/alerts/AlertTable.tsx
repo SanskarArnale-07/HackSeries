@@ -1,22 +1,28 @@
 import React, { useState, useMemo } from 'react';
 import type { ConjunctionEvent } from '../../api/types';
 import { Search, X } from 'lucide-react';
-import { formatRelativeSpeed, formatUtcShort } from '../../api/formatters';
+import { formatRelativeSpeed, formatUtcShort, isSyntheticEvent } from '../../api/formatters';
 
 interface AlertTableProps {
   events: ConjunctionEvent[];
   selectedEventId: string | null;
   onSelectEvent: (event: ConjunctionEvent) => void;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 export const AlertTable: React.FC<AlertTableProps> = ({
   events,
   selectedEventId,
   onSelectEvent,
-  isLoading = false
+  isLoading = false,
+  error = null
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+
+  const hasSyntheticEvents = useMemo(() => {
+    return events.some((ev) => isSyntheticEvent(ev));
+  }, [events]);
 
   const filteredEvents = useMemo(() => {
     if (!searchTerm.trim()) return events;
@@ -69,26 +75,43 @@ export const AlertTable: React.FC<AlertTableProps> = ({
             </button>
           )}
         </div>
+        {/* Simulated Scenario Alert Notice if Synthetic Objects Injected */}
+        {hasSyntheticEvents && (
+          <div className="px-3.5 py-2 bg-amber-950/40 border-t border-amber-500/20 text-[10px] font-mono text-amber-300/90 flex items-start gap-1.5 flex-shrink-0">
+            <span className="font-bold text-amber-400 flex-shrink-0">[SIMULATION]</span>
+            <span>Benchmarking synthetic test pair (NORAD #99001 / #99002). Not a verified real-world conjunction.</span>
+          </div>
+        )}
       </div>
 
       {/* Events List */}
       <div className="flex-1 overflow-y-auto divide-y divide-[#131d2e]">
         {isLoading ? (
           <div className="p-10 text-center text-xs text-[#64748b] flex flex-col items-center gap-2.5">
-            <div className="w-5 h-5 border-2 border-[#00e5ff] border-t-transparent rounded-full animate-spin" />
-            <span>Screening orbit catalog...</span>
+            <div className="w-5 h-5 border-2 border-[#38bdf8] border-t-transparent rounded-full animate-spin" />
+            <span>Screening orbit catalog over 24h window...</span>
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center text-xs text-red-400 space-y-2">
+            <p className="font-semibold text-red-300">Screening Data Unavailable</p>
+            <p className="text-[11px] leading-relaxed text-red-400/80">
+              {error}
+            </p>
           </div>
         ) : filteredEvents.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#64748b] space-y-1.5">
-            <p className="text-[#94a3b8] font-medium">No candidate close approaches</p>
-            <p className="text-[11px] leading-relaxed text-[#64748b]">
-              All object pairs maintain &gt;50 km Euclidean separation across the active screening window.
+          <div className="p-8 text-center text-xs space-y-2">
+            <p className="text-emerald-400 font-semibold text-xs font-mono">
+              SCREENING COMPLETE // ZERO CLOSE APPROACHES
+            </p>
+            <p className="text-[11px] leading-relaxed text-[#94a3b8]">
+              All object pairs maintain &gt;50 km Euclidean separation throughout the 24-hour evaluation interval.
             </p>
           </div>
         ) : (
           <>
             {filteredEvents.map((ev) => {
               const isSelected = ev.event_id === selectedEventId;
+              const isSimulated = isSyntheticEvent(ev);
 
               return (
                 <div
@@ -100,19 +123,26 @@ export const AlertTable: React.FC<AlertTableProps> = ({
                       : 'hover:bg-[#0d1422] border-transparent'
                   }`}
                 >
-                  {/* Header: Screening Priority Badge & Bold Miss Distance */}
+                  {/* Header: Screening Priority Badge, Simulation Tag & Miss Distance */}
                   <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider ${
-                        ev.screening_tier === 'CRITICAL'
-                          ? 'bg-red-950/70 text-red-300 border border-red-500/40'
-                          : ev.screening_tier === 'WARNING'
-                          ? 'bg-amber-950/70 text-amber-300 border border-amber-500/40'
-                          : 'bg-yellow-950/70 text-yellow-300 border border-yellow-500/40'
-                      }`}
-                    >
-                      {ev.screening_tier}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider ${
+                          ev.screening_tier === 'CRITICAL'
+                            ? 'bg-red-950/70 text-red-300 border border-red-500/40'
+                            : ev.screening_tier === 'WARNING'
+                            ? 'bg-amber-950/70 text-amber-300 border border-amber-500/40'
+                            : 'bg-yellow-950/70 text-yellow-300 border border-yellow-500/40'
+                        }`}
+                      >
+                        {ev.screening_tier}
+                      </span>
+                      {isSimulated && (
+                        <span className="px-1 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40 leading-none">
+                          SIMULATED
+                        </span>
+                      )}
+                    </div>
                     <div className="font-mono text-xs font-bold text-[#f1f5f9]">
                       {ev.miss_distance_km.toFixed(3)}
                       <span className="text-[10px] text-[#94a3b8] font-normal ml-1">km</span>
@@ -150,13 +180,15 @@ export const AlertTable: React.FC<AlertTableProps> = ({
 
             {/* Operational Screening Status Note */}
             {filteredEvents.length > 0 && (
-              <div className="p-3.5 m-3 rounded bg-[#090d18] border border-[#141f33] space-y-1.5 text-[11px] text-[#64748b] font-mono">
+              <div className="p-3 m-3 rounded bg-[#090d18] border border-[#141f33] space-y-1 text-[11px] text-[#64748b] font-mono">
                 <div className="text-[#94a3b8] font-semibold text-xs flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   <span>SGP4 Screening Active</span>
                 </div>
                 <p className="leading-relaxed text-[10px] text-[#64748b]">
-                  24h lookahead window screened across catalog. All other pairs maintain &gt;50 km clearance.
+                  {hasSyntheticEvents
+                    ? '24h lookahead window screened across catalog with benchmark targets included.'
+                    : '24h lookahead window screened across catalog. All other pairs maintain >50 km clearance.'}
                 </p>
               </div>
             )}

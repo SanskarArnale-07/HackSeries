@@ -43,3 +43,58 @@ export function formatUtcShort(iso: string): string {
     return iso;
   }
 }
+
+/**
+ * Detect whether an encounter event is synthetic (e.g. simulated benchmark pairs)
+ */
+export function isSyntheticEvent(event: any): boolean {
+  if (!event) return false;
+  const primNorad = event.primary_object?.norad_id ?? 0;
+  const secNorad = event.secondary_object?.norad_id ?? 0;
+  const primName = (event.primary_object?.name || '').toUpperCase();
+  const secName = (event.secondary_object?.name || '').toUpperCase();
+  const eventId = (event.event_id || '').toUpperCase();
+
+  return (
+    primNorad >= 99000 ||
+    secNorad >= 99000 ||
+    primName.includes('SYNTH') ||
+    secName.includes('SYNTH') ||
+    eventId.includes('SYNTH')
+  );
+}
+
+/**
+ * Detect whether a catalog object is synthetic
+ */
+export function isSyntheticObject(obj: any): boolean {
+  if (!obj) return false;
+  const norad = obj.norad_id ?? 0;
+  const name = (obj.name || '').toUpperCase();
+  return norad >= 99000 || name.includes('SYNTH');
+}
+
+/**
+ * Safely format vector components without ever defaulting missing values to 0
+ */
+export function formatVectorComponent(val: number | null | undefined, decimals = 4): string {
+  if (typeof val !== 'number' || isNaN(val)) return 'N/A';
+  return val.toFixed(decimals);
+}
+
+/**
+ * Safely format angular degrees without ever defaulting missing values to 0°
+ */
+export function formatDegree(deg: number | null | undefined, decimals = 2): string {
+  if (typeof deg !== 'number' || isNaN(deg)) return 'N/A';
+  return `${deg.toFixed(decimals)}°`;
+}
+
+/**
+ * Safely format distance in km without defaulting missing values to 0 km
+ */
+export function formatKm(val: number | null | undefined, decimals = 2): string {
+  if (typeof val !== 'number' || isNaN(val)) return 'N/A';
+  return `${val.toFixed(decimals)} km`;
+}
+
