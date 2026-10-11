@@ -1,20 +1,18 @@
 import React from 'react';
-import { Info } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 
 export const DisclaimerBanner: React.FC = () => {
   return (
-    <footer className="h-8 border-t border-white/10 bg-[#05070a] px-4 flex items-center justify-between text-[11px] font-mono text-[#8a99ad] select-none">
+    <footer className="h-8 border-t border-[#1c2436] bg-[#05070a] px-4 flex items-center justify-between text-xs select-none z-20">
       <div className="flex items-center gap-2 truncate">
-        <Info className="w-3.5 h-3.5 text-[#00f0ff] flex-shrink-0" />
-        <span className="truncate">
-          <strong className="text-[#f0f4f8]">SCIENTIFIC DISCLAIMER:</strong> TRAJACTRA is a
-          research and demonstration prototype. Screened close approaches and miss-distance tiers
-          are heuristic indicators, not validated collision probabilities or operational
-          collision-avoidance advice.
+        <ShieldAlert className="w-3.5 h-3.5 text-[#00e5ff] flex-shrink-0" />
+        <span className="truncate text-xs text-[#94a3b8]">
+          <strong className="text-[#f8fafc] font-semibold">SCIENTIFIC DISCLAIMER:</strong> TRAJACTRA
+          screens geometric proximity using analytical SGP4. Minimum separation distances are heuristic screening metrics, not collision probabilities (P<sub>c</sub>) or operational maneuver mandates.
         </span>
       </div>
-      <div className="text-[10px] text-[#4e5b6e] flex-shrink-0 pl-4">
-        SGP4/SDP4 Analytical Propagation &bull; TEME/ECEF Decoupled
+      <div className="text-xs text-[#64748b] flex-shrink-0 pl-4 hidden md:block">
+        TEME Inertial / WGS-84 Earth-Fixed &bull; Zero External Credentials
       </div>
     </footer>
   );

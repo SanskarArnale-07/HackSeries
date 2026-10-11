@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+.pytest_cache/
+
+# Node / Frontend
+node_modules/
+dist/
+.DS_Store
+
+# Runtime Data Cache
+data/cache/*
+!data/cache/.gitkeep
+
+# Environment variables
+.env
+.env.local
