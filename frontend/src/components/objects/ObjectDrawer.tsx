@@ -52,14 +52,8 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
     }
   };
 
-  // Check if primary and secondary objects are co-orbital (e.g. synthetic intercept test pair)
-  const isCoOrbitalPair = Boolean(
-    primaryObject &&
-      secondaryObject &&
-      Math.abs(primaryObject.orbital_parameters.inclination_deg - secondaryObject.orbital_parameters.inclination_deg) < 0.05 &&
-      Math.abs(primaryObject.orbital_parameters.eccentricity - secondaryObject.orbital_parameters.eccentricity) < 0.001 &&
-      Math.abs(primaryObject.orbital_parameters.perigee_altitude_km - secondaryObject.orbital_parameters.perigee_altitude_km) < 1.0
-  );
+
+
 
   return (
     <aside className="w-84 md:w-96 bg-[#0a0f1a] border-l border-[#172236] flex flex-col select-none overflow-y-auto h-full flex-shrink-0 z-20">
@@ -238,64 +232,77 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                     </div>
                   </div>
 
-        {/* Object A Card */}
-        <div className="p-3 rounded bg-[#0e1218] border border-white/10 space-y-1.5">
-          <div className="flex items-center justify-between text-[#00f0ff] font-semibold text-[11px]">
-            <div className="flex items-center gap-1.5">
-              <Orbit className="w-3.5 h-3.5" />
-              PRIMARY OBJECT
-            </div>
-            <span className="text-[10px] text-[#8a99ad]">
-              NORAD {event.primary_object.norad_id}
-            </span>
-          </div>
-          <div className="font-bold text-[#f0f4f8] text-xs">{event.primary_object.name}</div>
-          <div className="text-[10px] text-[#8a99ad]">TYPE: {event.primary_object.type}</div>
+                  {/* Primary Object Card */}
+                  <div className="p-3 rounded bg-[#0e1218] border border-white/10 space-y-1.5">
+                    <div className="flex items-center justify-between text-[#00f0ff] font-semibold text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <Orbit className="w-3.5 h-3.5" />
+                        PRIMARY OBJECT
+                      </div>
+                      <span className="text-[10px] text-[#8a99ad]">
+                        NORAD {event.primary_object.norad_id}
+                      </span>
+                    </div>
+                    <div className="font-bold text-[#f0f4f8] text-xs">{event.primary_object.name}</div>
+                    <div className="text-[10px] text-[#8a99ad]">TYPE: {event.primary_object.type}</div>
 
-          {primaryObject ? (
-            <div className="grid grid-cols-2 gap-1 text-[10px] pt-1.5 border-t border-white/5 text-[#8a99ad]">
-              <div>Inc: {primaryObject.orbital_parameters.inclination_deg}&deg;</div>
-              <div>Ecc: {primaryObject.orbital_parameters.eccentricity}</div>
-              <div>Perigee: {primaryObject.orbital_parameters.perigee_altitude_km} km</div>
-              <div>Apogee: {primaryObject.orbital_parameters.apogee_altitude_km} km</div>
-              <div className="col-span-2 text-[9px] text-emerald-400/90 pt-0.5 font-semibold">
-                ✓ SGP4 Propagated Trajectory Active on Globe
-              </div>
-            </div>
-          ) : (
-            <div className="text-[10px] text-amber-400/80 pt-1 border-t border-white/5">
-              Accurate geodetic position unavailable (unpropagated)
-            </div>
-          )}
-        </div>
+                    {primaryObject ? (
+                      <div className="grid grid-cols-2 gap-1 text-[10px] pt-1.5 border-t border-white/5 text-[#8a99ad]">
+                        <div>Inc: {primaryObject.orbital_parameters.inclination_deg}&deg;</div>
+                        <div>Ecc: {primaryObject.orbital_parameters.eccentricity}</div>
+                        <div>Perigee: {primaryObject.orbital_parameters.perigee_altitude_km} km</div>
+                        <div>Apogee: {primaryObject.orbital_parameters.apogee_altitude_km} km</div>
+                        <div className="col-span-2 text-[9px] text-emerald-400/90 pt-0.5 font-semibold">
+                          ✓ SGP4 Propagated Trajectory Active on Globe
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-amber-400/80 pt-1 border-t border-white/5">
+                        Accurate geodetic position unavailable (unpropagated)
+                      </div>
+                    )}
+                  </div>
 
-            {/* Scientific Rule 2 Adherence Notice */}
-            <div className="p-2 rounded bg-[#080d16] border border-[#152033] text-[10px] font-mono text-[#64748b] leading-relaxed">
-              Analytical SGP4 / TEME distance screening. No collision probability (P<sub>c</sub>) claimed without covariance.
-            </div>
-            <span className="text-[10px] text-[#8a99ad]">
-              NORAD {event.secondary_object.norad_id}
-            </span>
-          </div>
-          <div className="font-bold text-[#f0f4f8] text-xs">{event.secondary_object.name}</div>
-          <div className="text-[10px] text-[#8a99ad]">TYPE: {event.secondary_object.type}</div>
+                  {/* Secondary Object Card */}
+                  <div className="p-3 rounded bg-[#0e1218] border border-white/10 space-y-1.5">
+                    <div className="flex items-center justify-between text-[#94a3b8] font-semibold text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <Orbit className="w-3.5 h-3.5" />
+                        SECONDARY OBJECT
+                      </div>
+                      <span className="text-[10px] text-[#8a99ad]">
+                        NORAD {event.secondary_object.norad_id}
+                      </span>
+                    </div>
+                    <div className="font-bold text-[#f0f4f8] text-xs">{event.secondary_object.name}</div>
+                    <div className="text-[10px] text-[#8a99ad]">TYPE: {event.secondary_object.type}</div>
 
-          {secondaryObject ? (
-            <div className="grid grid-cols-2 gap-1 text-[10px] pt-1.5 border-t border-white/5 text-[#8a99ad]">
-              <div>Inc: {secondaryObject.orbital_parameters.inclination_deg}&deg;</div>
-              <div>Ecc: {secondaryObject.orbital_parameters.eccentricity}</div>
-              <div>Perigee: {secondaryObject.orbital_parameters.perigee_altitude_km} km</div>
-              <div>Apogee: {secondaryObject.orbital_parameters.apogee_altitude_km} km</div>
-              <div className="col-span-2 text-[9px] text-emerald-400/90 pt-0.5 font-semibold">
-                ✓ SGP4 Propagated Trajectory Active on Globe
-              </div>
+                    {secondaryObject ? (
+                      <div className="grid grid-cols-2 gap-1 text-[10px] pt-1.5 border-t border-white/5 text-[#8a99ad]">
+                        <div>Inc: {secondaryObject.orbital_parameters.inclination_deg}&deg;</div>
+                        <div>Ecc: {secondaryObject.orbital_parameters.eccentricity}</div>
+                        <div>Perigee: {secondaryObject.orbital_parameters.perigee_altitude_km} km</div>
+                        <div>Apogee: {secondaryObject.orbital_parameters.apogee_altitude_km} km</div>
+                        <div className="col-span-2 text-[9px] text-emerald-400/90 pt-0.5 font-semibold">
+                          ✓ SGP4 Propagated Trajectory Active on Globe
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-amber-400/80 pt-1 border-t border-white/5">
+                        Accurate geodetic position unavailable (unpropagated)
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Scientific Rule 2 Adherence Notice */}
+                  <div className="p-2 rounded bg-[#080d16] border border-[#152033] text-[10px] font-mono text-[#64748b] leading-relaxed">
+                    Analytical SGP4 / TEME distance screening. No collision probability (P<sub>c</sub>) claimed without covariance.
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-[10px] text-amber-400/80 pt-1 border-t border-white/5">
-              Accurate geodetic position unavailable (unpropagated)
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </aside>
   );
