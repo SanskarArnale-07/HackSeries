@@ -23,6 +23,13 @@ export interface GlobeViewProps {
   onSelectEvent?: (event: ConjunctionEvent) => void;
   showOutlines?: boolean;
   showOrbits?: boolean;
+  allSatellites?: Array<{
+    norad_id: number;
+    name: string;
+    lat: number;
+    lon: number;
+    alt: number;
+  }>;
 }
 
 export const GlobeView: React.FC<GlobeViewProps> = ({
@@ -32,7 +39,8 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
   events = [],
   onSelectEvent,
   showOutlines = true,
-  showOrbits = true
+  showOrbits = true,
+  allSatellites = []
 }) => {
   // Convert SGP4 trajectories into TacticalGlobe format
   const trajectories: TacticalTrajectory[] = useMemo(() => {
@@ -163,8 +171,30 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
       }
     }
 
+    // 4. Background satellite catalog markers (unselected)
+    for (const sat of allSatellites) {
+      if (
+        sat.norad_id === primaryTrajectory?.norad_id ||
+        sat.norad_id === secondaryTrajectory?.norad_id
+      ) {
+        continue;
+      }
+      list.push({
+        id: `catalog-${sat.norad_id}`,
+        label: sat.name,
+        description: `NORAD: ${sat.norad_id}\nLat: ${sat.lat.toFixed(2)}°\nLon: ${sat.lon.toFixed(2)}°\nAlt: ${sat.alt.toFixed(0)} km`,
+        latitude: sat.lat,
+        longitude: sat.lon,
+        color: '#475569',
+        size: 2.8,
+        isPulsing: false,
+        objectType: 'PAYLOAD',
+        badge: 'CATALOG SATELLITE'
+      });
+    }
+
     return list;
-  }, [events, selectedEvent, primaryTrajectory, secondaryTrajectory, onSelectEvent]);
+  }, [events, selectedEvent, primaryTrajectory, secondaryTrajectory, onSelectEvent, allSatellites]);
 
   return (
     <div className="w-full h-full relative bg-[#000000]">
