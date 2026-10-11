@@ -83,9 +83,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
     setError(null);
     try {
       const [healthData, conjData, objData] = await Promise.all([
-        fetchHealth().catch(() => null),
-        fetchConjunctions().catch(() => ({ screening_metadata: {} as any, events: [] })),
-        fetchObjects(100).catch(() => ({ objects: [], summary: {}, total_matched: 0 }))
+        fetchHealth(),
+        fetchConjunctions(),
+        fetchObjects(100)
       ]);
 
       if (healthData) setHealth(healthData);
@@ -161,6 +161,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
               selectedNoradId={selectedCatalogObject?.norad_id || null}
               onSelectObject={handleSelectCatalogObject}
               isLoading={isLoading}
+              error={error}
             />
           ) : (
             <AlertTable

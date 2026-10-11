@@ -160,10 +160,6 @@ body {
   letter-spacing: 1.2px;
 }
 
-.tools-heading {
-  margin-top: 26px;
-}
-
 .nav-group {
   display: grid;
   gap: 5px;

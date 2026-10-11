@@ -29,8 +29,8 @@ class AppState:
         self.data_source = ingest_res.source_name
         self.is_live = ingest_res.is_live
         
-        # If we got fewer than 2 objects (e.g. rate limit), append the calibrated synthetic pair so demonstrations always work
-        if len(self.objects) < 2:
+        # Fallback to full fixture snapshot if fewer than 50 objects loaded
+        if len(self.objects) < 50:
             from backend.core.ingestion.cache import load_fixture_data
             from backend.core.validation.validator import parse_tle_catalog_text
             fix_text = load_fixture_data()
@@ -54,24 +54,6 @@ class AppState:
             objects=self.objects,
             window_hours=24
         )
-        
-        # If real catalog objects in stations group have 0 conjunctions within 50 km, inject/include synthetic benchmark pair if needed for UI demo
-        if not self.conjunctions.events and len(self.objects) < 50:
-            from pathlib import Path
-            from backend.config import settings
-            from backend.core.validation.validator import parse_tle_catalog_text
-            synth_path = settings.SYNTHETIC_FIXTURE_PATH
-            if synth_path.exists():
-                synth_objs, _ = parse_tle_catalog_text(synth_path.read_text(encoding="utf-8"))
-                for so in synth_objs:
-                    if so.norad_id not in self.objects_by_id:
-                        self.objects.append(so)
-                        self.objects_by_id[so.norad_id] = so
-                # Re-run screening to include candidate encounter
-                self.conjunctions = execute_conjunction_screening(
-                    objects=self.objects,
-                    window_hours=24
-                )
         
         # 3. Space weather
         self.weather = load_space_weather(force_offline=force_offline)

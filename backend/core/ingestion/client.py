@@ -40,16 +40,31 @@ def load_orbital_catalog(max_objects: int = 100, force_offline: bool = False) ->
             data_age_seconds=0.0
         )
 
-    # Attempt live retrieval
+    # Check cache
+    cached_text, cache_age = get_cached_tle_data()
+    if cached_text:
+        objs, diag = parse_tle_catalog_text(cached_text)
+        if objs and len(objs) >= 50:
+            return IngestionResult(
+                objects=objs[:max_objects],
+                diagnostics=diag,
+                is_live=False,
+                source_name="LOCAL_CACHE",
+                data_age_seconds=cache_age or 0.0
+            )
+
+    # Attempt live retrieval with timeout <= 2.5s
     live_text = None
     try:
-        # Use stations or active
-        url = settings.CELESTRAK_STATIONS_URL
+        url = settings.CELESTRAK_ACTIVE_URL if max_objects > 25 else settings.CELESTRAK_STATIONS_URL
         with httpx.Client(timeout=settings.HTTP_TIMEOUT_SECONDS) as client:
             resp = client.get(url)
             if resp.status_code == 200 and "1 " in resp.text and "2 " in resp.text:
-                live_text = resp.text
-                save_tle_cache(live_text)
+                candidate_text = resp.text
+                cand_objs, _ = parse_tle_catalog_text(candidate_text)
+                if len(cand_objs) >= 50:
+                    live_text = candidate_text
+                    save_tle_cache(live_text)
     except Exception:
         live_text = None
 
@@ -64,22 +79,10 @@ def load_orbital_catalog(max_objects: int = 100, force_offline: bool = False) ->
                 data_age_seconds=0.0
             )
 
-    # Check cache
-    cached_text, cache_age = get_cached_tle_data()
-    if cached_text:
-        objs, diag = parse_tle_catalog_text(cached_text)
-        if objs:
-            return IngestionResult(
-                objects=objs[:max_objects],
-                diagnostics=diag,
-                is_live=False,
-                source_name="LOCAL_CACHE",
-                data_age_seconds=cache_age or 0.0
-            )
-
-    # Fallback to committed offline fixture
+    # Fallback to committed offline fixture (100 objects)
     fixture_text = load_fixture_data()
     objs, diag = parse_tle_catalog_text(fixture_text)
+    save_tle_cache(fixture_text)
     return IngestionResult(
         objects=objs[:max_objects],
         diagnostics=diag,

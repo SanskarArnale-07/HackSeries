@@ -7,13 +7,15 @@ interface CatalogViewProps {
   selectedNoradId: number | null;
   onSelectObject: (obj: OrbitalObject) => void;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 export const CatalogView: React.FC<CatalogViewProps> = ({
   objects,
   selectedNoradId,
   onSelectObject,
-  isLoading = false
+  isLoading = false,
+  error = null
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -69,6 +71,13 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           <div className="p-10 text-center text-xs text-[#64748b] flex flex-col items-center gap-2.5">
             <div className="w-5 h-5 border-2 border-[#00e5ff] border-t-transparent rounded-full animate-spin" />
             <span>Loading satellite catalog...</span>
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center text-xs text-red-400 space-y-2">
+            <p className="font-semibold text-red-300">Catalog Data Unavailable</p>
+            <p className="text-[11px] leading-relaxed text-red-400/80">
+              {error}
+            </p>
           </div>
         ) : filteredObjects.length === 0 ? (
           <div className="p-8 text-center text-xs text-[#64748b]">
