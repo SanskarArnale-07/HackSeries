@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,14 +8,51 @@
   <title>TRAJECTRA | Orbital Operations & Conjunction Analysis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Orbitron:wght@600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
+  <!-- Cinematic Launch Radar Splash Screen (Image 1 Inspiration) -->
+  <div id="launch-radar-overlay" class="launch-radar-overlay" role="dialog" aria-modal="true"
+    aria-label="Orbital Radar Loading">
+    <div class="radar-scope-wrapper">
+      <div class="radar-scope">
+        <div class="radar-ring ring-1"></div>
+        <div class="radar-ring ring-2"></div>
+        <div class="radar-ring ring-3"></div>
+        <div class="radar-crosshair crosshair-h"></div>
+        <div class="radar-crosshair crosshair-v"></div>
+        <div class="radar-ticks"></div>
+        <div class="radar-sweep-beam"></div>
+        <div class="radar-blip blip-1"></div>
+        <div class="radar-blip blip-2"></div>
+        <div class="radar-blip blip-3"></div>
+        <div class="radar-blip blip-4"></div>
+        <div class="radar-center-ring"></div>
+      </div>
+    </div>
+    <div class="radar-hud">
+      <h1 class="radar-title">ORBITAL RADAR<span class="radar-tm">™</span></h1>
+      <p class="radar-tagline">Making Earth's orbit understandable.</p>
+      <div class="radar-loading-indicator">
+        <span class="radar-pulse-dot"></span>
+        <span class="radar-status-label">▶ LOADING SATELLITES...</span>
+        <b class="radar-pct" id="radar-pct-counter">0%</b>
+      </div>
+      <div class="radar-subtext">SYNCING LIVE ORBITAL DATA...</div>
+      <button id="skip-radar-btn" class="radar-skip-btn" type="button">ENTER WORKSPACE ➔</button>
+    </div>
+  </div>
+
   <div class="app-shell">
     <aside class="sidebar">
-      <a class="brand" href="#overview" aria-label="Trajectra overview"><span class="brand-mark"><i></i></span><span>TRAJECTRA<span class="brand-slash">/</span></span></a>
-      <div class="workspace"><span class="workspace-mark">T</span><span><b>TRAJECTRA OPS</b><small>Orbital Safety Console</small></span></div>
+      <a class="brand" href="#overview" aria-label="Trajectra overview"><span
+          class="brand-mark"><i></i></span><span>TRAJECTRA<span class="brand-slash">/</span></span></a>
+      <div class="workspace"><span class="workspace-mark">T</span><span><b>TRAJECTRA OPS</b><small>Orbital Safety
+            Console</small></span></div>
       <p class="nav-heading">WORKSPACE</p>
       <nav class="nav-group" aria-label="Main navigation">
         <button class="nav-item active" data-page="overview"><span>◫</span>Overview</button>
@@ -24,20 +62,37 @@
         <button class="nav-item" data-page="maneuvers"><span>↗</span>Maneuver planning</button>
       </nav>
       <div class="sidebar-bottom">
-        <div class="connection-card"><span class="status-dot"></span><b>BACKEND PENDING</b><p>Live mission data will appear when the service is connected.</p></div>
-        <div class="profile"><span class="avatar">T1</span><span><b>Operator</b><small>Mission Specialist</small></span></div>
+        <div class="connection-card"><span class="status-dot"></span><b>BACKEND PENDING</b>
+          <p>Live mission data will appear when the service is connected.</p>
+        </div>
+        <div class="profile"><span class="avatar">T1</span><span><b>Operator</b><small>Mission Specialist</small></span>
+        </div>
       </div>
     </aside>
     <main class="main-area">
-      <header class="topbar"><div class="crumb"><span>TRAJECTRA OPS</span><i>/</i><b id="breadcrumb">OVERVIEW</b></div><div class="topbar-right"><div class="connection-status"><span class="status-dot"></span>AWAITING DATA</div><div class="user-chip"><span>T1</span>Operator</div></div></header>
+      <header class="topbar">
+        <div class="crumb"><span>TRAJECTRA OPS</span><i>/</i><b id="breadcrumb">OVERVIEW</b></div>
+        <div class="topbar-right">
+          <div class="connection-status"><span class="status-dot"></span>AWAITING DATA</div>
+          <div class="user-chip"><span>T1</span>Operator</div>
+        </div>
+      </header>
       <div class="page-wrap">
-        <section class="page-heading"><div><div class="eyebrow"><span></span>ORBITAL OPERATIONS & CONJUNCTION ANALYSIS</div><h1 id="page-title">Overview</h1><p id="page-description">Mission information will appear here when the backend is connected.</p></div></section>
+        <section class="page-heading">
+          <div>
+            <div class="eyebrow"><span></span>ORBITAL OPERATIONS & CONJUNCTION ANALYSIS</div>
+            <h1 id="page-title">Overview</h1>
+            <p id="page-description">Mission information will appear here when the backend is connected.</p>
+          </div>
+        </section>
         <section id="page-content" aria-live="polite"></section>
-        <footer class="page-footer"><span>TRAJECTRA <i>·</i> ORBITAL OPERATIONS & CONJUNCTION ANALYSIS</span></footer>
+        <footer class="page-footer"><span>TRAJECTRA <i>·</i> ORBITAL OPERATIONS & CONJUNCTION
+            ANALYSIS</span><span>FRONTEND MODULE</span></footer>
       </div>
     </main>
   </div>
   <script src="tactical-globe.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>
