@@ -6,7 +6,7 @@ import worldLandData from '../../assets/world-land.json';
 import type { ConjunctionEvent, EphemerisTrajectory } from '../../api/types';
 
 const EARTH_RADIUS_KM = 6378.137;
-const SPHERE_RADIUS = 2.0;
+const SPHERE_RADIUS = 2.15;
 
 function latLonToVector3(lat: number, lon: number, altKm = 0, radiusBase = SPHERE_RADIUS): THREE.Vector3 {
   const r = radiusBase * (1.0 + altKm / EARTH_RADIUS_KM);
@@ -44,7 +44,6 @@ function ThreeLine({
 
 // Pure-black Earth sphere with subtle dark-gray continent outlines
 function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
-  // Parse GeoJSON coastline geometries into Three.js line segments
   const lineSegments = useMemo(() => {
     const segments: THREE.Vector3[][] = [];
     if (!worldLandData || !worldLandData.features) return segments;
@@ -79,16 +78,16 @@ function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
 
   return (
     <group>
-      {/* 1. Pure-black Earth Core (No daytime textures, no blue oceans) */}
+      {/* 1. Pure-black Earth Core (no textures, no atmospheric glow) */}
       <mesh>
         <sphereGeometry args={[SPHERE_RADIUS, 64, 64]} />
         <meshBasicMaterial color="#000000" />
       </mesh>
 
-      {/* 2. Subtle equator ring */}
+      {/* 2. Equator reference ring */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[SPHERE_RADIUS * 1.001, SPHERE_RADIUS * 1.003, 64]} />
-        <meshBasicMaterial color="#1a1f29" side={THREE.DoubleSide} />
+        <ringGeometry args={[SPHERE_RADIUS * 1.001, SPHERE_RADIUS * 1.0025, 64]} />
+        <meshBasicMaterial color="#161e2a" side={THREE.DoubleSide} />
       </mesh>
 
       {/* 3. Subtle dark-gray continent outlines from Natural Earth vector */}
@@ -97,7 +96,7 @@ function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
           <ThreeLine
             key={`coastline-${i}`}
             points={pts}
-            color="#363c48"
+            color="#323c4d"
             opacity={0.8}
           />
         ))}
@@ -105,11 +104,11 @@ function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
   );
 }
 
-// Orbit spline trajectory rendered from backend ephemeris
+// Orbit spline trajectory rendered from backend SGP4 ephemeris
 function TrajectoryLine({
   trajectory,
   color,
-  opacity = 0.85
+  opacity = 0.9
 }: {
   trajectory: EphemerisTrajectory;
   color: string;
@@ -135,13 +134,15 @@ function SatelliteMarker({
   lon,
   altKm,
   color,
-  size = 0.04
+  size = 0.025,
+  isHighlighted = false
 }: {
   lat: number;
   lon: number;
   altKm: number;
   color: string;
   size?: number;
+  isHighlighted?: boolean;
 }) {
   const pos = useMemo(() => latLonToVector3(lat, lon, altKm), [lat, lon, altKm]);
 
@@ -151,16 +152,20 @@ function SatelliteMarker({
         <sphereGeometry args={[size, 16, 16]} />
         <meshBasicMaterial color={color} />
       </mesh>
-      {/* Glow halo */}
+      {/* Soft halo */}
       <mesh>
-        <sphereGeometry args={[size * 1.8, 16, 16]} />
-        <meshBasicMaterial color={color} transparent opacity={0.3} />
+        <sphereGeometry args={[size * (isHighlighted ? 2.2 : 1.5), 16, 16]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={isHighlighted ? 0.4 : 0.15}
+        />
       </mesh>
     </group>
   );
 }
 
-// Encounter Beacon Pulse
+// Encounter Beacon Pulse at Time of Closest Approach (TCA)
 function EncounterBeacon({
   lat,
   lon,
@@ -175,11 +180,18 @@ function EncounterBeacon({
   const pos = useMemo(() => latLonToVector3(lat, lon, altKm), [lat, lon, altKm]);
   const ringRef = useRef<THREE.Mesh>(null);
 
-  const beaconColor = tier === 'CRITICAL' ? '#ff3b30' : tier === 'WARNING' ? '#ff9500' : '#ffd60a';
+  const beaconColor =
+    tier === 'CRITICAL'
+      ? '#ef4444'
+      : tier === 'WARNING'
+      ? '#f59e0b'
+      : tier === 'WATCH'
+      ? '#eab308'
+      : '#10b981';
 
   useFrame(({ clock }) => {
     if (ringRef.current) {
-      const scale = 1.0 + Math.sin(clock.getElapsedTime() * 4.0) * 0.4;
+      const scale = 1.0 + Math.sin(clock.getElapsedTime() * 3.0) * 0.3;
       ringRef.current.scale.set(scale, scale, scale);
     }
   });
@@ -187,12 +199,12 @@ function EncounterBeacon({
   return (
     <group position={pos}>
       <mesh>
-        <sphereGeometry args={[0.06, 16, 16]} />
+        <sphereGeometry args={[0.045, 16, 16]} />
         <meshBasicMaterial color={beaconColor} />
       </mesh>
       <mesh ref={ringRef}>
-        <sphereGeometry args={[0.12, 16, 16]} />
-        <meshBasicMaterial color={beaconColor} transparent opacity={0.4} wireframe />
+        <sphereGeometry args={[0.09, 16, 16]} />
+        <meshBasicMaterial color={beaconColor} transparent opacity={0.3} wireframe />
       </mesh>
     </group>
   );
@@ -215,10 +227,24 @@ export function GlobeView({
   showOutlines = true,
   showOrbits = true
 }: GlobeViewProps) {
+  const secondaryColor = useMemo(() => {
+    if (!selectedEvent) return '#f59e0b';
+    switch (selectedEvent.screening_tier) {
+      case 'CRITICAL':
+        return '#ef4444';
+      case 'WARNING':
+        return '#f59e0b';
+      case 'WATCH':
+        return '#eab308';
+      default:
+        return '#10b981';
+    }
+  }, [selectedEvent]);
+
   return (
     <div className="w-full h-full relative bg-[#000000]">
       <Canvas
-        camera={{ position: [0, 2.5, 5.0], fov: 45 }}
+        camera={{ position: [0, 1.6, 3.7], fov: 40 }}
         style={{ background: '#000000' }}
       >
         <color attach="background" args={['#000000']} />
@@ -228,30 +254,45 @@ export function GlobeView({
         <PureBlackEarth showOutlines={showOutlines} />
 
         {/* Background constellation satellites */}
-        {allSatellites.map((sat) => (
-          <SatelliteMarker
-            key={`sat-${sat.norad_id}`}
-            lat={sat.lat}
-            lon={sat.lon}
-            altKm={sat.alt}
-            color="#00f0ff"
-            size={0.025}
-          />
-        ))}
+        {allSatellites.map((sat) => {
+          const isPrimary = selectedEvent?.primary_object.norad_id === sat.norad_id;
+          const isSecondary = selectedEvent?.secondary_object.norad_id === sat.norad_id;
+          const color = isPrimary
+            ? '#00e5ff'
+            : isSecondary
+            ? secondaryColor
+            : '#38bdf8';
+
+          return (
+            <SatelliteMarker
+              key={`sat-${sat.norad_id}`}
+              lat={sat.lat}
+              lon={sat.lon}
+              altKm={sat.alt}
+              color={color}
+              size={isPrimary || isSecondary ? 0.04 : 0.02}
+              isHighlighted={isPrimary || isSecondary}
+            />
+          );
+        })}
 
         {/* Selected conjunction event trajectories */}
         {showOrbits && primaryTrajectory && (
-          <TrajectoryLine trajectory={primaryTrajectory} color="#00f0ff" opacity={0.9} />
+          <TrajectoryLine
+            trajectory={primaryTrajectory}
+            color="#00e5ff"
+            opacity={0.9}
+          />
         )}
         {showOrbits && secondaryTrajectory && (
           <TrajectoryLine
             trajectory={secondaryTrajectory}
-            color={selectedEvent?.screening_tier === 'CRITICAL' ? '#ff3b30' : '#ff9500'}
-            opacity={0.9}
+            color={secondaryColor}
+            opacity={0.85}
           />
         )}
 
-        {/* Selected conjunction encounter marker */}
+        {/* Selected encounter beacon at TCA */}
         {selectedEvent && (
           <EncounterBeacon
             lat={selectedEvent.encounter_location_wgs84.latitude_deg}
@@ -264,37 +305,15 @@ export function GlobeView({
         <OrbitControls
           enableDamping
           dampingFactor={0.05}
-          rotateSpeed={0.6}
-          minDistance={2.5}
-          maxDistance={12.0}
+          rotateSpeed={0.7}
+          minDistance={2.4}
+          maxDistance={9.0}
         />
       </Canvas>
 
-      {/* Floating Viewport Legend */}
-      <div className="absolute top-4 left-4 pointer-events-none flex flex-col gap-1.5 text-xs font-mono bg-black/60 p-2.5 rounded border border-white/10 backdrop-blur-sm">
-        <div className="text-[#8a99ad] text-[10px] tracking-wider uppercase mb-1">
-          3D Inertial Reference (WGS-84 / ECEF)
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#00f0ff]" />
-          <span className="text-[#f0f4f8]">Catalog Satellite / Primary Orbit</span>
-        </div>
-        {selectedEvent && (
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                selectedEvent.screening_tier === 'CRITICAL' ? 'bg-[#ff3b30]' : 'bg-[#ff9500]'
-              }`}
-            />
-            <span className="text-[#f0f4f8]">
-              Chaser Trajectory ({selectedEvent.screening_tier})
-            </span>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-0.5 bg-[#363c48]" />
-          <span className="text-[#8a99ad]">Natural Earth 110m Coastlines</span>
-        </div>
+      {/* Minimal, non-intrusive geocentric reference tag */}
+      <div className="absolute top-4 left-4 pointer-events-none text-xs text-[#64748b] bg-[#06080c]/80 px-2.5 py-1 rounded backdrop-blur-sm border border-[#141a26]">
+        TEME Inertial &bull; WGS-84 Coastlines
       </div>
     </div>
   );

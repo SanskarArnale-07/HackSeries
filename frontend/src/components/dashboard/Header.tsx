@@ -1,90 +1,103 @@
 import React from 'react';
-import { ShieldAlert, Activity, Wifi, WifiOff, Sun, Satellite } from 'lucide-react';
-import type { HealthResponse, SpaceWeatherState } from '../../api/types';
+import { Satellite, RefreshCw } from 'lucide-react';
+import type { HealthResponse } from '../../api/types';
+
+export type DashboardTab = 'overview' | 'catalog';
 
 interface HeaderProps {
+  activeTab: DashboardTab;
+  onTabChange: (tab: DashboardTab) => void;
   health: HealthResponse | null;
-  weather: SpaceWeatherState | null;
-  totalObjects: number;
-  totalConjunctions: number;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+  onNavigateHome?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  activeTab,
+  onTabChange,
   health,
-  weather,
-  totalObjects,
-  totalConjunctions
+  onRefresh,
+  isRefreshing,
+  onNavigateHome
 }) => {
-  const isOnline = health?.data_source?.includes('LIVE');
-  const kp = weather?.planetary_k_index?.kp_index ?? weather?.planetary_k_index?.estimated_kp ?? 3.0;
-  const f107 = weather?.solar_radio_flux_f107?.flux ?? 150.0;
-  const stormStatus = weather?.geomagnetic_storm_status ?? 'QUIET';
+  const isLive = health?.data_source?.includes('LIVE') ?? false;
+  const rawSource = health?.data_source || 'INITIALIZING';
+  const sourceLabel = isLive ? 'Live data' : 'Cached snapshot';
 
   return (
-    <header className="h-14 border-b border-white/10 bg-[#06080b] px-4 flex items-center justify-between select-none">
-      {/* Brand title */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded border border-[#00f0ff]/30 bg-[#00f0ff]/10 text-[#00f0ff]">
-          <Satellite className="w-5 h-5 animate-pulse" />
+    <header className="h-14 border-b border-[#141a26] bg-[#06080c] px-6 flex items-center justify-between select-none z-20">
+      {/* Brand & Minimal Navigation */}
+      <div className="flex items-center gap-8">
+        <div
+          onClick={onNavigateHome}
+          className={`flex items-center gap-2.5 ${
+            onNavigateHome ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+          }`}
+          title={onNavigateHome ? 'Return to Cinematic Landing Page' : undefined}
+        >
+          <Satellite className="w-4 h-4 text-[#00e5ff]" />
+          <span className="font-mono font-bold tracking-wider text-sm text-[#f8fafc]">
+            TRAJACTRA
+          </span>
+          <span className="text-xs text-[#64748b] hidden sm:inline">&bull;</span>
+          <span className="text-xs text-[#94a3b8] hidden sm:inline">
+            Orbital Intelligence
+          </span>
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono font-bold tracking-wider text-base text-[#f0f4f8]">
-              TRAJACTRA
-            </span>
-            <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[#8a99ad]">
-              v1.0-MVP
-            </span>
-          </div>
-          <p className="text-[11px] text-[#8a99ad] tracking-wide">
-            Orbital Intelligence & Conjunction Analysis
-          </p>
-        </div>
+
+        {/* Clean, calm navigation */}
+        <nav className="flex items-center gap-1">
+          <button
+            onClick={() => onTabChange('overview')}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              activeTab === 'overview'
+                ? 'text-[#00e5ff] bg-[#0e131d]'
+                : 'text-[#94a3b8] hover:text-[#f8fafc]'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => onTabChange('catalog')}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              activeTab === 'catalog'
+                ? 'text-[#00e5ff] bg-[#0e131d]'
+                : 'text-[#94a3b8] hover:text-[#f8fafc]'
+            }`}
+          >
+            Catalog
+          </button>
+        </nav>
       </div>
 
-      {/* Telemetry & System Status Badges */}
-      <div className="flex items-center gap-3 text-xs font-mono">
-        {/* Source provenance */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0e1218] border border-white/5">
-          {isOnline ? (
-            <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-          ) : (
-            <WifiOff className="w-3.5 h-3.5 text-amber-400" />
-          )}
-          <span className="text-[#8a99ad]">SOURCE:</span>
-          <span className="text-[#f0f4f8] font-semibold">
-            {health?.data_source || 'INITIALIZING'}
-          </span>
+      {/* Right Controls: Truthful Status & Minimal Refresh Icon */}
+      <div className="flex items-center gap-4">
+        {/* Compact data status */}
+        <div
+          className="flex items-center gap-2 text-xs text-[#94a3b8] cursor-help"
+          title={`Data source: ${rawSource}\nTimeout: 2.5s | Fallback: data/fixtures/celestrak_snapshot.txt`}
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              isLive ? 'bg-emerald-400' : 'bg-amber-400'
+            }`}
+          />
+          <span className="font-medium text-[#cbd5e1]">{sourceLabel}</span>
         </div>
 
-        {/* Catalog Count */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0e1218] border border-white/5">
-          <Activity className="w-3.5 h-3.5 text-[#00f0ff]" />
-          <span className="text-[#8a99ad]">CATALOG:</span>
-          <span className="text-[#00f0ff] font-semibold">{totalObjects}</span>
-          <span className="text-[#4e5b6e]">LEO</span>
-        </div>
-
-        {/* Screened Encounters */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0e1218] border border-white/5">
-          <ShieldAlert className="w-3.5 h-3.5 text-[#ff9500]" />
-          <span className="text-[#8a99ad]">ALERTS (&le;50km):</span>
-          <span className={`font-semibold ${totalConjunctions > 0 ? 'text-[#ff3b30]' : 'text-emerald-400'}`}>
-            {totalConjunctions}
-          </span>
-        </div>
-
-        {/* Space Weather Status */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0e1218] border border-white/5">
-          <Sun className="w-3.5 h-3.5 text-amber-400" />
-          <span className="text-[#8a99ad]">SWPC:</span>
-          <span className="text-[#f0f4f8]">
-            Kp {kp.toFixed(1)} / {f107.toFixed(0)} sfu
-          </span>
-          <span className={`text-[10px] px-1 rounded ${stormStatus === 'QUIET' ? 'bg-emerald-950 text-emerald-400' : 'bg-amber-950 text-amber-400'}`}>
-            {stormStatus}
-          </span>
-        </div>
+        {/* Minimal refresh icon button */}
+        <button
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          className="p-1.5 rounded hover:bg-[#121824] text-[#94a3b8] hover:text-[#00e5ff] transition-colors disabled:opacity-50"
+          title="Refresh screening pipeline"
+          aria-label="Refresh data"
+        >
+          <RefreshCw
+            className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#00e5ff]' : ''}`}
+          />
+        </button>
       </div>
     </header>
   );

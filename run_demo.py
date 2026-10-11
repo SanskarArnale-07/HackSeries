@@ -1,44 +1,49 @@
-"""
-TRAJACTRA: Orbital Conjunction & Space Traffic Risk Engine
-Demonstration Launcher (run_demo.py)
+#!/usr/bin/env python3
+"""TRAJACTRA Demonstration Launcher.
 
 Launches both the FastAPI Astrodynamics backend and the React/Vite dashboard concurrently.
-Supports --offline flag for air-gapped demonstration mode using local cached fixtures.
+Supports an offline air-gapped demonstration mode via `--offline`.
 """
 
-import sys
+import argparse
 import os
 import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 def main():
-    offline_flag = "--offline" in sys.argv
+    parser = argparse.ArgumentParser(description="TRAJACTRA Single-Command Demonstration Launcher")
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="Run in air-gapped demonstration mode using validated local offline fixtures"
+    )
+    args = parser.parse_args()
+
     project_root = Path(__file__).resolve().parent
     frontend_dir = project_root / "frontend"
 
     print("=" * 70)
     print("  TRAJACTRA: Orbital Intelligence & Conjunction Analysis Engine")
     print("=" * 70)
-    if offline_flag:
+
+    env = os.environ.copy()
+    if args.offline:
+        env["OFFLINE_MODE"] = "true"
         print("  [MODE] Air-Gapped / Offline Demonstration Mode Enabled")
         print("  - Upstream network fetches disabled")
         print("  - Serving local verified fixtures from data/fixtures/")
-        os.environ["OFFLINE_MODE"] = "true"
     else:
         print("  [MODE] Online Mode (with automatic fallback to local fixtures)")
-    
+
     print("-" * 70)
     print("  Starting Services:")
     print("  • Backend API:        http://127.0.0.1:8000 (Swagger: http://127.0.0.1:8000/docs)")
     print("  • Frontend Dashboard: http://localhost:3000")
     print("=" * 70)
     print("  Press Ctrl+C to stop all services.\n")
-
-    env = os.environ.copy()
-    if offline_flag:
-        env["OFFLINE_MODE"] = "true"
 
     # Start FastAPI Backend
     backend_cmd = [
