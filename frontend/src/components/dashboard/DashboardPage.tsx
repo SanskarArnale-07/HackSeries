@@ -114,21 +114,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
     setIsInspectorOpen(false);
   };
 
-  // Map background constellation satellites for 3D globe visualization
-  const allSatellites = objects.slice(0, 50).map((obj) => {
-    const raan = obj.orbital_parameters.raan_deg ?? 0;
-    const ma = obj.orbital_parameters.mean_anomaly_deg ?? 0;
-    const inc = obj.orbital_parameters.inclination_deg;
-    const lat = Math.sin((ma * Math.PI) / 180) * inc;
-    const lon = ((raan + ma) % 360) - 180;
-    return {
-      norad_id: obj.norad_id,
-      name: obj.name,
-      lat,
-      lon,
-      alt: obj.orbital_parameters.perigee_altitude_km
-    };
-  });
 
   const primaryObj = objects.find(
     (o) => o.norad_id === selectedEvent?.primary_object.norad_id
@@ -198,7 +183,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
             selectedEvent={selectedEvent}
             primaryTrajectory={primaryTrajectory}
             secondaryTrajectory={secondaryTrajectory}
-            allSatellites={allSatellites}
+            events={events}
+            onSelectEvent={handleSelectEvent}
             showOutlines={showOutlines}
             showOrbits={showOrbits}
           />
