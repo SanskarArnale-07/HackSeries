@@ -174,7 +174,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
       {/* 3. Main Aerospace Operations Console (3-Pane Balanced Workspace) */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left Column: Screened Close Approaches or Catalog Explorer */}
-        <div className="w-76 lg:w-84 flex-shrink-0 h-full flex flex-col z-10">
+        <div className="w-80 lg:w-88 flex-shrink-0 h-full flex flex-col z-10 border-r border-[#141f33]">
           {activeTab === 'catalog' ? (
             <CatalogView
               objects={objects}
@@ -193,7 +193,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
         </div>
 
         {/* Center Stage: Interactive 3D Earth Globe Visualizer */}
-        <div className="flex-1 h-full relative bg-[#070b14] overflow-hidden">
+        <div className="flex-1 h-full relative bg-[#05080e] overflow-hidden">
           <GlobeView
             selectedEvent={selectedEvent}
             primaryTrajectory={primaryTrajectory}
@@ -211,12 +211,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
               onClick={() => setShowOutlines((prev) => !prev)}
               className={`px-2.5 py-1 rounded text-xs transition-colors border backdrop-blur-md cursor-pointer ${
                 showOutlines
-                  ? 'bg-[#10192a]/90 border-[#00e5ff]/35 text-[#f8fafc]'
-                  : 'bg-[#090e18]/85 border-[#172236] text-[#64748b]'
+                  ? 'bg-[#0f1728]/90 border-[#38bdf8]/40 text-[#f1f5f9]'
+                  : 'bg-[#090e18]/80 border-[#141f33] text-[#64748b] hover:text-[#94a3b8]'
               }`}
               title="Toggle continental landmass outlines"
             >
-              <Eye className="w-3.5 h-3.5 inline mr-1 text-[#00e5ff]" />
+              <Eye className="w-3.5 h-3.5 inline mr-1 text-[#38bdf8]" />
               <span>Coastlines</span>
             </button>
 
@@ -224,8 +224,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
               onClick={() => setShowOrbits((prev) => !prev)}
               className={`px-2.5 py-1 rounded text-xs transition-colors border backdrop-blur-md cursor-pointer ${
                 showOrbits
-                  ? 'bg-[#10192a]/90 border-[#00e5ff]/35 text-[#00e5ff]'
-                  : 'bg-[#090e18]/85 border-[#172236] text-[#64748b]'
+                  ? 'bg-[#0f1728]/90 border-[#38bdf8]/40 text-[#38bdf8]'
+                  : 'bg-[#090e18]/80 border-[#141f33] text-[#64748b] hover:text-[#94a3b8]'
               }`}
               title="Toggle orbital splines"
             >
@@ -237,7 +237,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
             {!isInspectorOpen && (selectedEvent || selectedCatalogObject) && (
               <button
                 onClick={() => setIsInspectorOpen(true)}
-                className="px-2.5 py-1 rounded bg-[#10192a]/90 border border-[#00e5ff]/35 text-[#00e5ff] text-xs backdrop-blur-md flex items-center gap-1 cursor-pointer hover:bg-[#142036] transition-colors"
+                className="px-2.5 py-1 rounded bg-[#0f1728]/90 border border-[#38bdf8]/40 text-[#38bdf8] text-xs backdrop-blur-md flex items-center gap-1 cursor-pointer hover:bg-[#142036] transition-colors"
                 title="Open Telemetry Inspector"
               >
                 <PanelRightOpen className="w-3.5 h-3.5" />

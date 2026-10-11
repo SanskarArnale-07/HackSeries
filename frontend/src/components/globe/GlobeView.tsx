@@ -13,7 +13,6 @@ import React, { useMemo } from 'react';
 import { TacticalGlobe3D } from './TacticalGlobe3D';
 import type { TacticalGlobeMarker, TacticalTrajectory } from './TacticalGlobe3D';
 import type { ConjunctionEvent, EphemerisTrajectory } from '../../api/types';
-import { Compass } from 'lucide-react';
 
 export interface GlobeViewProps {
   selectedEvent: ConjunctionEvent | null;
@@ -56,9 +55,9 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
         list.push({
           id: `traj-primary-${primaryTrajectory.norad_id}`,
           name: `${primaryTrajectory.name} Orbit`,
-          color: '#00f0ff',
+          color: '#38bdf8',
           opacity: 0.9,
-          strokeWidth: 1.6,
+          strokeWidth: 1.2,
           points: validPoints
         });
       }
@@ -72,9 +71,9 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
       if (validPoints.length >= 2) {
         const tierCol =
           selectedEvent?.screening_tier === 'CRITICAL'
-            ? '#ff3b30'
+            ? '#ef4444'
             : selectedEvent?.screening_tier === 'WARNING'
-            ? '#ff9500'
+            ? '#f59e0b'
             : '#eab308';
 
         list.push({
@@ -82,7 +81,7 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
           name: `${secondaryTrajectory.name} Orbit`,
           color: tierCol,
           opacity: 0.85,
-          strokeWidth: 1.4,
+          strokeWidth: 1.2,
           dashArray: '3,3',
           points: validPoints
         });
@@ -101,9 +100,9 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
       const isSelected = selectedEvent?.event_id === ev.event_id;
       const tierColor =
         ev.screening_tier === 'CRITICAL'
-          ? '#ff3b30'
+          ? '#ef4444'
           : ev.screening_tier === 'WARNING'
-          ? '#ff9500'
+          ? '#f59e0b'
           : ev.screening_tier === 'WATCH'
           ? '#eab308'
           : '#10b981';
@@ -113,11 +112,12 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
         label: isSelected
           ? `TCA: ${ev.primary_object.name}`
           : `${ev.primary_object.name} / ${ev.secondary_object.name}`,
-        description: `Miss: ${ev.miss_distance_km.toFixed(3)} km\nRel Speed: ${ev.relative_speed_km_s.toFixed(2)} km/s\nAlt: ${ev.encounter_location_wgs84.altitude_km.toFixed(1)} km\nTCA: ${ev.tca_utc}`,
+        showLabel: isSelected, // Only show text label for the active selected encounter
+        description: `Miss Distance: ${ev.miss_distance_km.toFixed(3)} km\nRel Speed: ${ev.relative_speed_km_s.toFixed(2)} km/s\nAlt: ${ev.encounter_location_wgs84.altitude_km.toFixed(1)} km\nTCA: ${ev.tca_utc}`,
         latitude: ev.encounter_location_wgs84.latitude_deg,
         longitude: ev.encounter_location_wgs84.longitude_deg,
         color: tierColor,
-        size: isSelected ? 7 : 4.5,
+        size: isSelected ? 6 : 4,
         isPulsing: isSelected || ev.screening_tier === 'CRITICAL',
         objectType: 'CONJUNCTION',
         badge: `${ev.screening_tier} TCA`,
@@ -132,11 +132,12 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
         list.push({
           id: `sat-primary-${primaryTrajectory.norad_id}`,
           label: `${primaryTrajectory.name}`,
+          showLabel: true,
           description: `NORAD ID: ${primaryTrajectory.norad_id}\nPropagated Lat: ${p0.lat_deg.toFixed(2)}°\nLon: ${p0.lon_deg.toFixed(2)}°\nAlt: ${p0.alt_km?.toFixed(1) ?? 'N/A'} km\nStatus: SGP4 VALID`,
           latitude: p0.lat_deg,
           longitude: p0.lon_deg,
-          color: '#00f0ff',
-          size: 5.5,
+          color: '#38bdf8',
+          size: 4.8,
           isPulsing: true,
           objectType: 'PAYLOAD',
           badge: 'PRIMARY PAYLOAD (NOW)'
@@ -159,11 +160,12 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
         list.push({
           id: `sat-secondary-${secondaryTrajectory.norad_id}`,
           label: `${secondaryTrajectory.name}`,
+          showLabel: true,
           description: `NORAD ID: ${secondaryTrajectory.norad_id}\nType: ${secType}\nPropagated Lat: ${p0.lat_deg.toFixed(2)}°\nLon: ${p0.lon_deg.toFixed(2)}°\nAlt: ${p0.alt_km?.toFixed(1) ?? 'N/A'} km\nStatus: SGP4 VALID`,
           latitude: p0.lat_deg,
           longitude: p0.lon_deg,
           color: typeCol,
-          size: 5.5,
+          size: 4.8,
           isPulsing: true,
           objectType: secType as any,
           badge: `CHASER ${secType} (NOW)`
@@ -171,7 +173,7 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
       }
     }
 
-    // 4. Background satellite catalog markers (unselected)
+    // 4. Background satellite catalog markers (unselected — no permanent labels to avoid clutter)
     for (const sat of allSatellites) {
       if (
         sat.norad_id === primaryTrajectory?.norad_id ||
@@ -182,11 +184,12 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
       list.push({
         id: `catalog-${sat.norad_id}`,
         label: sat.name,
+        showLabel: false, // Hidden by default, visible on hover tooltip
         description: `NORAD: ${sat.norad_id}\nLat: ${sat.lat.toFixed(2)}°\nLon: ${sat.lon.toFixed(2)}°\nAlt: ${sat.alt.toFixed(0)} km`,
         latitude: sat.lat,
         longitude: sat.lon,
         color: '#475569',
-        size: 2.8,
+        size: 2.2,
         isPulsing: false,
         objectType: 'PAYLOAD',
         badge: 'CATALOG SATELLITE'
@@ -197,7 +200,7 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
   }, [events, selectedEvent, primaryTrajectory, secondaryTrajectory, onSelectEvent, allSatellites]);
 
   return (
-    <div className="w-full h-full relative bg-[#000000]">
+    <div className="w-full h-full relative bg-[#05080e]">
       {/* Tactical SVG 3D Orthographic Globe */}
       <TacticalGlobe3D
         markers={markers}
@@ -207,59 +210,34 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
         showGrid={true}
         showStars={true}
         autoRotate={true}
-        autoRotateSpeed={3.0}
+        autoRotateSpeed={2.5}
         rotateY={18}
-        glowColor="#00f0ff"
-        glowIntensity={0.35}
-        oceanColor="#04070c"
-        landFill="#0b1017"
+        glowColor="#2563eb"
+        glowIntensity={0.22}
+        oceanColor="#06090e"
+        landFill="#0c1219"
         landStroke="#1e293b"
-        strokeWidth={0.65}
-        hoverColor="#13273e"
+        strokeWidth={0.55}
+        hoverColor="#17253b"
         className="w-full h-full"
       />
 
-      {/* Floating Viewport Legend & Aerospace Provenance */}
-      <div className="absolute top-4 left-4 pointer-events-none flex flex-col gap-1.5 text-xs font-mono bg-black/75 p-3 rounded border border-white/10 backdrop-blur-md shadow-2xl z-20 max-w-xs">
-        <div className="flex items-center gap-1.5 text-[#00f0ff] text-[10px] tracking-wider uppercase font-bold border-b border-white/10 pb-1">
-          <Compass className="w-3.5 h-3.5" />
-          Tactical Orthographic Globe (WGS-84)
+      {/* Discreet Unobtrusive Bottom Legend & Status Bar */}
+      <div className="absolute bottom-3 left-4 pointer-events-none flex items-center gap-3.5 text-[11px] font-mono bg-[#090e18]/85 px-3 py-1.5 rounded border border-[#172236]/80 backdrop-blur-md shadow-lg z-20">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#38bdf8]" />
+          <span className="text-[#cbd5e1] text-[10px]">Primary</span>
         </div>
-
-        {/* Legend Item: Primary */}
-        <div className="flex items-center gap-2 pt-0.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#00f0ff] ring-1 ring-[#00f0ff]/50" />
-          <span className="text-[#f0f4f8] text-[11px]">Primary Payload (Instantaneous)</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#f59e0b]" />
+          <span className="text-[#cbd5e1] text-[10px]">Secondary</span>
         </div>
-
-        {/* Legend Item: Chaser / Encounter */}
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#ff9500] ring-1 ring-[#ff9500]/50" />
-          <span className="text-[#f0f4f8] text-[11px]">Secondary Object / Chaser</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#ef4444]" />
+          <span className="text-[#cbd5e1] text-[10px]">Conjunction TCA</span>
         </div>
-
-        {/* Legend Item: Critical TCA Beacon */}
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#ff3b30] animate-ping" />
-          <span className="text-[#f0f4f8] text-[11px]">Critical Conjunction TCA</span>
-        </div>
-
-        {/* Legend Item: Coastlines & Grid */}
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-0.5 bg-[#1e293b]" />
-          <span className="text-[#8a99ad] text-[10px]">Natural Earth Vector Coastlines</span>
-        </div>
-
-        {/* Provenance Indicator */}
-        <div className="mt-1 pt-1.5 border-t border-white/10 text-[9px] text-[#8a99ad] leading-tight">
-          <div className="text-emerald-400 flex items-center gap-1 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            Real SGP4 Propagated Geodesy
-          </div>
-          <div className="opacity-75 pt-0.5">
-            Angles (RAAN/MA) never coerced into lat/lon. Backside markers auto-culled.
-          </div>
-        </div>
+        <span className="text-[#334155]">•</span>
+        <span className="text-[#64748b] text-[10px]">WGS-84 / TEME SGP4</span>
       </div>
     </div>
   );

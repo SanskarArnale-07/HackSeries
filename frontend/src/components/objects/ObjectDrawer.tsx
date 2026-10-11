@@ -62,20 +62,20 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
   );
 
   return (
-    <aside className="w-84 md:w-96 bg-[#0a0f1a] border-l border-[#172236] flex flex-col select-none overflow-y-auto h-full flex-shrink-0 z-20">
+    <aside className="w-84 md:w-96 bg-[#080d18] border-l border-[#141f33] flex flex-col select-none overflow-y-auto h-full flex-shrink-0 z-20 font-sans">
       {/* Inspector Header */}
-      <div className="p-3.5 border-b border-[#172236] bg-[#0c1220] flex items-center justify-between flex-shrink-0">
+      <div className="p-4 border-b border-[#141f33] bg-[#0a101f] flex items-center justify-between flex-shrink-0">
         <div className="min-w-0 pr-2">
-          <span className="text-[10px] font-mono font-semibold tracking-wider text-[#00e5ff] uppercase block">
-            {event ? 'Encounter Details' : 'Object Telemetry'}
+          <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] block">
+            {event ? 'Encounter Telemetry' : 'Catalog Object Details'}
           </span>
-          <span className="text-xs font-mono font-bold text-[#f8fafc] truncate block">
+          <span className="text-xs font-mono font-bold text-[#f1f5f9] truncate block mt-0.5">
             {event ? event.event_id : selectedCatalogObject?.name}
           </span>
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded hover:bg-[#141e30] text-[#64748b] hover:text-[#f8fafc] transition-colors cursor-pointer flex-shrink-0"
+          className="p-1.5 rounded hover:bg-[#142036] text-[#64748b] hover:text-[#f1f5f9] transition-colors cursor-pointer flex-shrink-0"
           title="Close details"
           aria-label="Close"
         >
@@ -87,14 +87,14 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
         {/* If Conjunction Encounter is Selected */}
         {event && (
           <>
-            {/* 1. HERO METRIC: Geometric Miss Distance & Screening Tier (Visible by default) */}
+            {/* 1. HERO PROXIMITY CARD: Geometric Miss Distance & Screening Priority */}
             {(() => {
               const tierInfo = getTierDetails(event.screening_tier);
               return (
-                <div className="p-3.5 rounded bg-[#0d1424] border border-[#1a263c] space-y-2">
+                <div className="p-4 rounded bg-[#0b1222] border border-[#16233b] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-[#94a3b8] font-medium flex items-center gap-1.5">
-                      <ShieldAlert className="w-3.5 h-3.5 text-[#00e5ff]" />
+                    <span className="text-xs text-[#94a3b8] font-medium flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5 text-[#38bdf8]" />
                       Screening Priority
                     </span>
                     <span
@@ -108,11 +108,11 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                     <span className="text-[10px] font-mono uppercase tracking-wider text-[#64748b] block">
                       Geometric Miss Distance
                     </span>
-                    <div className="text-2xl font-mono font-extrabold text-[#f8fafc] tracking-tight mt-0.5">
+                    <div className="text-3xl font-mono font-extrabold text-[#f8fafc] tracking-tight mt-0.5">
                       {event.miss_distance_km.toFixed(3)}
-                      <span className="text-sm font-normal text-[#94a3b8] ml-1.5">km</span>
+                      <span className="text-sm font-normal text-[#94a3b8] ml-1.5 font-sans">km</span>
                     </div>
-                    <span className="text-[10px] text-[#64748b] font-mono block mt-0.5">
+                    <span className="text-[11px] text-[#94a3b8] block mt-1">
                       {tierInfo.desc}
                     </span>
                   </div>
@@ -120,58 +120,54 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
               );
             })()}
 
-            {/* 2. CORE ENCOUNTER KINEMATICS (Visible by default) */}
-            <div className="grid grid-cols-2 gap-2.5">
-              {/* Relative Velocity (Consistent across entire application) */}
-              <div className="p-2.5 rounded bg-[#0d1424] border border-[#172236]">
-                <span className="text-[10px] text-[#64748b] block font-medium">
-                  Relative Velocity (v<sub>rel</sub>)
-                </span>
-                <span className="text-sm font-mono font-bold text-[#00e5ff] block mt-0.5">
-                  {formatRelativeSpeed(event.relative_speed_km_s)}
-                </span>
+            {/* 2. CORE ENCOUNTER KINEMATICS */}
+            <div className="p-3.5 rounded bg-[#0b1222] border border-[#16233b] space-y-3">
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#64748b] block">
+                Kinematics &amp; Timing
+              </span>
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <span className="text-[10px] text-[#64748b] block">Relative Velocity (v<sub>rel</sub>)</span>
+                  <span className="text-sm font-mono font-bold text-[#f1f5f9] block mt-0.5">
+                    {formatRelativeSpeed(event.relative_speed_km_s)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[#64748b] block">TCA Epoch</span>
+                  <span className="text-xs font-mono font-semibold text-[#f1f5f9] block mt-0.5 truncate" title={formatUtcTimestamp(event.tca_utc)}>
+                    {event.tca_utc.replace('T', ' ').substring(0, 16)} UTC
+                  </span>
+                </div>
               </div>
-
-              {/* Time of Closest Approach (TCA) */}
-              <div className="p-2.5 rounded bg-[#0d1424] border border-[#172236]">
-                <span className="text-[10px] text-[#64748b] block font-medium">
-                  TCA (UTC)
-                </span>
-                <span className="text-xs font-mono font-semibold text-[#f8fafc] block mt-0.5 truncate" title={formatUtcTimestamp(event.tca_utc)}>
-                  {event.tca_utc.replace('T', ' ').substring(0, 16)} UTC
-                </span>
+              <div className="pt-2 border-t border-[#141f33] text-[11px] font-mono text-[#94a3b8] flex items-center justify-between">
+                <span>Exact TCA:</span>
+                <span className="text-[#f1f5f9] font-medium">{formatUtcTimestamp(event.tca_utc)}</span>
               </div>
             </div>
 
-            {/* Full Formatted TCA String */}
-            <div className="px-3 py-2 rounded bg-[#0d1424] border border-[#172236] text-[11px] font-mono text-[#cbd5e1] flex items-center justify-between">
-              <span className="text-[#64748b]">TCA Epoch:</span>
-              <span className="font-semibold text-[#f8fafc]">{formatUtcTimestamp(event.tca_utc)}</span>
-            </div>
-
-            {/* 3. TRACKED INTERCEPT PAIR (Visible by default) */}
-            <div className="p-3 rounded bg-[#0d1424] border border-[#172236] space-y-2.5">
-              <span className="text-[10px] font-mono font-semibold text-[#64748b] uppercase tracking-wider block">
+            {/* 3. TRACKED INTERCEPT PAIR */}
+            <div className="p-3.5 rounded bg-[#0b1222] border border-[#16233b] space-y-3">
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#64748b] block">
                 Intercept Pair Identities
               </span>
 
               {/* Primary Object */}
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-[#141e30]">
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-[#141f33]">
                 <div className="min-w-0 pr-2">
-                  <span className="font-semibold text-[#00e5ff] block truncate" title={event.primary_object.name}>
+                  <span className="font-semibold text-[#f1f5f9] block truncate" title={event.primary_object.name}>
                     {event.primary_object.name}
                   </span>
                   <span className="text-[11px] font-mono text-[#64748b]">
                     NORAD #{event.primary_object.norad_id} &bull; {event.primary_object.type || 'PAYLOAD'}
                   </span>
                 </div>
-                <span className="text-[10px] font-mono text-[#00e5ff] px-1.5 py-0.5 rounded bg-[#00e5ff]/10 border border-[#00e5ff]/25 flex-shrink-0">
+                <span className="text-[10px] font-mono text-[#38bdf8] px-2 py-0.5 rounded bg-[#38bdf8]/10 border border-[#38bdf8]/20 flex-shrink-0">
                   PRIMARY
                 </span>
               </div>
 
               {/* Secondary Object */}
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-[#141e30]">
+              <div className="flex items-center justify-between text-xs pt-2 border-t border-[#141f33]">
                 <div className="min-w-0 pr-2">
                   <span className="font-semibold text-[#cbd5e1] block truncate" title={event.secondary_object.name}>
                     {event.secondary_object.name}
@@ -180,26 +176,26 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                     NORAD #{event.secondary_object.norad_id} &bull; {event.secondary_object.type || 'OBJECT'}
                   </span>
                 </div>
-                <span className="text-[10px] font-mono text-[#94a3b8] px-1.5 py-0.5 rounded bg-[#162234] border border-[#22324b] flex-shrink-0">
-                  SECONDARY
+                <span className="text-[10px] font-mono text-[#f59e0b] px-2 py-0.5 rounded bg-[#f59e0b]/10 border border-[#f59e0b]/20 flex-shrink-0">
+                  CHASER
                 </span>
               </div>
             </div>
 
-            {/* 4. EXPANDABLE "ADVANCED ORBITAL TELEMETRY" (Collapsed by default) */}
-            <div className="pt-1 border-t border-[#172236]">
+            {/* 4. EXPANDABLE "ADVANCED ORBITAL TELEMETRY" */}
+            <div className="pt-1">
               <button
                 onClick={() => setShowAdvanced((prev) => !prev)}
-                className="w-full py-2.5 px-3 rounded bg-[#0d1424] hover:bg-[#121c30] border border-[#1a263c] flex items-center justify-between text-left text-xs transition-all cursor-pointer group"
+                className="w-full py-2.5 px-3 rounded bg-[#0b1222] hover:bg-[#101a30] border border-[#16233b] flex items-center justify-between text-left text-xs transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-2">
-                  <Orbit className="w-3.5 h-3.5 text-[#00e5ff]" />
-                  <span className="font-mono text-[11px] font-semibold text-[#f8fafc] group-hover:text-[#00e5ff] transition-colors">
+                  <Orbit className="w-3.5 h-3.5 text-[#38bdf8]" />
+                  <span className="font-medium text-xs text-[#cbd5e1] group-hover:text-white transition-colors">
                     Advanced Orbital Telemetry
                   </span>
                 </div>
                 {showAdvanced ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-[#00e5ff]" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#94a3b8]" />
                 ) : (
                   <ChevronRight className="w-3.5 h-3.5 text-[#64748b]" />
                 )}
@@ -208,10 +204,10 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
               {showAdvanced && (
                 <div className="mt-2.5 space-y-2.5 font-mono text-xs">
                   {/* WGS-84 Coordinates & Astrodynamics Reference Frames */}
-                  <div className="p-2.5 rounded bg-[#070b14] border border-[#172236] space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-[#00e5ff] text-[11px] font-sans font-semibold">
+                  <div className="p-3 rounded bg-[#080d1a] border border-[#141f33] space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[#38bdf8] text-[11px] font-sans font-semibold">
                       <Globe className="w-3.5 h-3.5" />
-                      <span>Encounter Coordinates &amp; Reference Frames</span>
+                      <span>Encounter Coordinates (WGS-84)</span>
                     </div>
                     <div className="text-[11px] text-[#cbd5e1]">
                       Lat: {event.encounter_location_wgs84?.latitude_deg?.toFixed(4) ?? 'N/A'}&deg; &bull; Lon: {event.encounter_location_wgs84?.longitude_deg?.toFixed(4) ?? 'N/A'}&deg;
@@ -225,7 +221,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                   </div>
 
                   {/* Relative Velocity Vector Decomposition */}
-                  <div className="p-2.5 rounded bg-[#070b14] border border-[#172236] space-y-1.5">
+                  <div className="p-3 rounded bg-[#080d1a] border border-[#141f33] space-y-1.5">
                     <div className="flex items-center gap-1.5 text-amber-400 text-[11px] font-sans font-semibold">
                       <Navigation className="w-3.5 h-3.5" />
                       <span>Relative Velocity Vectors (km/s)</span>
@@ -240,9 +236,9 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
 
                   {/* Primary Keplerian Orbital Elements */}
                   {primaryObject && (
-                    <div className="p-2.5 rounded bg-[#070b14] border border-[#172236] space-y-1">
+                    <div className="p-3 rounded bg-[#080d1a] border border-[#141f33] space-y-1">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-[#00e5ff] text-[11px] font-sans font-semibold">
+                        <div className="flex items-center gap-1.5 text-[#38bdf8] text-[11px] font-sans font-semibold">
                           <Orbit className="w-3.5 h-3.5" />
                           <span>Primary Orbital Elements</span>
                         </div>
@@ -255,7 +251,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                         Perigee: {primaryObject.orbital_parameters.perigee_altitude_km.toFixed(1)} km &bull; Apogee: {primaryObject.orbital_parameters.apogee_altitude_km.toFixed(1)} km
                       </div>
                       <div className="text-[10px] text-[#94a3b8]">
-                        RAAN (&Omega;): {primaryObject.orbital_parameters.raan_deg ?? 0}&deg; &bull; Mean Anomaly (M): {primaryObject.orbital_parameters.mean_anomaly_deg ?? 0}&deg;
+                        RAAN (&Omega;): {primaryObject.orbital_parameters.raan_deg ?? 0}&deg; &bull; Mean Anomaly: {primaryObject.orbital_parameters.mean_anomaly_deg ?? 0}&deg;
                       </div>
                       <div className="text-[10px] text-[#64748b]">
                         Period: {primaryObject.orbital_parameters.period_minutes.toFixed(2)} min &bull; SMA: {primaryObject.orbital_parameters.semi_major_axis_km.toFixed(1)} km
@@ -265,7 +261,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
 
                   {/* Secondary Keplerian Orbital Elements */}
                   {secondaryObject && (
-                    <div className="p-2.5 rounded bg-[#070b14] border border-[#172236] space-y-1">
+                    <div className="p-3 rounded bg-[#080d1a] border border-[#141f33] space-y-1">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-amber-400 text-[11px] font-sans font-semibold">
                           <Orbit className="w-3.5 h-3.5" />
@@ -280,7 +276,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
                         Perigee: {secondaryObject.orbital_parameters.perigee_altitude_km.toFixed(1)} km &bull; Apogee: {secondaryObject.orbital_parameters.apogee_altitude_km.toFixed(1)} km
                       </div>
                       <div className="text-[10px] text-[#94a3b8]">
-                        RAAN (&Omega;): {secondaryObject.orbital_parameters.raan_deg ?? 0}&deg; &bull; Mean Anomaly (M): {secondaryObject.orbital_parameters.mean_anomaly_deg ?? 0}&deg;
+                        RAAN (&Omega;): {secondaryObject.orbital_parameters.raan_deg ?? 0}&deg; &bull; Mean Anomaly: {secondaryObject.orbital_parameters.mean_anomaly_deg ?? 0}&deg;
                       </div>
                       <div className="text-[10px] text-[#64748b]">
                         Period: {secondaryObject.orbital_parameters.period_minutes.toFixed(2)} min &bull; SMA: {secondaryObject.orbital_parameters.semi_major_axis_km.toFixed(1)} km
@@ -290,8 +286,8 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
 
                   {/* Co-Orbital Synthetic Intercept Diagnostics Note */}
                   {isCoOrbitalPair && (
-                    <div className="p-2 rounded bg-[#0c1524] border border-[#1d2b42] text-[10px] font-mono text-[#94a3b8] leading-relaxed">
-                      <strong className="text-[#00e5ff]">Astrodynamics Analysis:</strong> Shared orbital plane (Inc {primaryObject?.orbital_parameters.inclination_deg}&deg;, Alt ~413-420 km) with differential RAAN (&Delta;&Omega; = 0.02&deg;) and true anomaly phase offset (&Delta;M = 0.015&deg;), resulting in close-approach intercept.
+                    <div className="p-2.5 rounded bg-[#09101c] border border-[#162238] text-[10px] font-mono text-[#94a3b8] leading-relaxed">
+                      <strong className="text-[#38bdf8]">Astrodynamics Note:</strong> Co-planar orbit with minor differential RAAN &amp; mean anomaly phase offset resulting in close-approach intercept.
                     </div>
                   )}
                 </div>
@@ -299,7 +295,7 @@ export const ObjectDrawer: React.FC<ObjectDrawerProps> = ({
             </div>
 
             {/* Scientific Rule 2 Adherence Notice */}
-            <div className="p-2 rounded bg-[#080d16] border border-[#152033] text-[10px] font-mono text-[#64748b] leading-relaxed">
+            <div className="p-2.5 rounded bg-[#070b16] border border-[#121b2c] text-[10px] font-mono text-[#64748b] leading-relaxed">
               Analytical SGP4 / TEME distance screening. No collision probability (P<sub>c</sub>) claimed without covariance.
             </div>
           </>
