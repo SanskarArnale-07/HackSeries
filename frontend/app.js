@@ -9,10 +9,25 @@ const pages = {
       <article class="metric"><span>DATA FEEDS</span><b>—</b><small>Awaiting service status</small></article>
       <article class="metric"><span>MODEL STATUS</span><b>—</b><small>Awaiting model service</small></article>
     </div>
-    <div class="content-grid">
-      <section class="panel orbit-panel"><div class="panel-head"><div><h2>Orbital view</h2><p>Object positions will be displayed when orbital data is available.</p></div><span class="panel-icon">◎</span></div><div class="empty-orbit"><div class="orbit-ring ring-one"></div><div class="orbit-ring ring-two"></div><div class="orbit-center">◎</div><div class="empty-copy"><b>No orbital data</b><span>Connect the backend to load tracked objects.</span></div></div></section>
-      <section class="panel activity-panel"><div class="panel-head"><div><h2>Conjunction activity</h2><p>Latest screening status</p></div></div><div class="empty-state"><span class="empty-icon">⌁</span><b>No screening results</b><p>Results will appear here after the backend returns conjunction data.</p><button class="text-link" data-navigate="conjunctions">Open conjunctions <span>→</span></button></div></section>
-    </div>
+    <section class="panel tactical-globe-panel">
+      <div class="panel-head">
+        <div>
+          <h2>Tactical Orbital View</h2>
+          <p>Interactive orthographic 3D projection with 3 active orbital trajectories</p>
+        </div>
+        <div class="globe-actions">
+          <button class="globe-ctrl-btn active" id="btn-toggle-spin" type="button"><span>↻</span> SPIN: AUTO</button>
+          <button class="globe-ctrl-btn" id="btn-reset-view" type="button"><span>⌖</span> RESET VIEW</button>
+          <span class="status-pill live-pill">LIVE 3D</span>
+        </div>
+      </div>
+      <div class="globe-viewport-container" id="tactical-globe-container"></div>
+      <div class="globe-legend-bar">
+        <div class="legend-item"><span class="legend-dot" style="background:#65d7c2;"></span><b>ORBIT 1: LEO (ISS)</b> <small>420 km · 51.6°</small></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#d9b56a;"></span><b>ORBIT 2: SSO (SENTINEL-1A)</b> <small>693 km · 98.2°</small></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#f07167;"></span><b>ORBIT 3: THREAT VECTOR (CZ-4B)</b> <small>1050 km · 63.4°</small></div>
+      </div>
+    </section>
     <section class="panel feed-panel"><div class="panel-head"><div><h2>System connections</h2><p>Service status reported by the project backend</p></div></div><div class="connection-list"><div><span class="connection-symbol">◉</span><span><b>Orbital data service</b><small>Waiting for backend connection</small></span><em>NOT CONNECTED</em></div><div><span class="connection-symbol">☼</span><span><b>Space weather service</b><small>Waiting for backend connection</small></span><em>NOT CONNECTED</em></div><div><span class="connection-symbol">⌘</span><span><b>Risk model service</b><small>Waiting for backend connection</small></span><em>NOT CONNECTED</em></div></div></section>`,
   },
   conjunctions: {
@@ -48,9 +63,10 @@ const pages = {
 };
 
 function showPage(name) {
-  const page = pages[name] || pages.overview;
+  const pageName = pages[name] ? name : 'overview';
+  const page = pages[pageName];
   document.querySelectorAll('[data-page]').forEach((button) => {
-    const selected = button.dataset.page === (pages[name] ? name : 'overview');
+    const selected = button.dataset.page === pageName;
     button.classList.toggle('active', selected);
     if (selected) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
@@ -59,7 +75,19 @@ function showPage(name) {
   document.getElementById('page-title').textContent = page.title;
   document.getElementById('page-description').textContent = page.description;
   document.getElementById('page-content').innerHTML = page.content;
-  history.replaceState(null, '', `#${pages[name] ? name : 'overview'}`);
+  history.replaceState(null, '', `#${pageName}`);
+
+  if (pageName === 'overview') {
+    setTimeout(() => {
+      if (window.TacticalGlobe) {
+        window.TacticalGlobe.mount('#tactical-globe-container');
+      }
+    }, 20);
+  } else {
+    if (window.TacticalGlobe) {
+      window.TacticalGlobe.unmount();
+    }
+  }
 }
 
 document.addEventListener('click', (event) => {
