@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { OrbitalObject } from '../../api/types';
-import { Search, Satellite, Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface CatalogViewProps {
   objects: OrbitalObject[];
@@ -16,101 +16,69 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
   isLoading = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
   const filteredObjects = useMemo(() => {
-    return objects.filter((obj) => {
-      const q = searchTerm.toLowerCase();
-      const matchesSearch =
+    if (!searchTerm.trim()) return objects;
+    const q = searchTerm.toLowerCase();
+    return objects.filter(
+      (obj) =>
         obj.name.toLowerCase().includes(q) ||
         obj.norad_id.toString().includes(q) ||
-        obj.intl_des.toLowerCase().includes(q);
-      const matchesType = typeFilter === 'ALL' || obj.object_type === typeFilter;
-      return matchesSearch && matchesType;
-    });
-  }, [objects, searchTerm, typeFilter]);
-
-  const typeCounts = useMemo(() => {
-    return {
-      ALL: objects.length,
-      PAYLOAD: objects.filter((o) => o.object_type === 'PAYLOAD').length,
-      DEBRIS: objects.filter((o) => o.object_type === 'DEBRIS').length,
-      ROCKET_BODY: objects.filter((o) => o.object_type === 'ROCKET_BODY').length
-    };
-  }, [objects]);
+        obj.intl_des.toLowerCase().includes(q)
+    );
+  }, [objects, searchTerm]);
 
   return (
-    <div className="flex flex-col h-full bg-[#080b10] border-r border-[#1c2436] select-none">
-      {/* Top Search & Filter Bar */}
-      <div className="p-3.5 border-b border-[#1c2436] bg-[#0a0d14] space-y-2.5">
+    <div className="flex flex-col h-full bg-[#06080c] select-none">
+      {/* Search Header */}
+      <div className="p-4 border-b border-[#141a26] space-y-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Satellite className="w-4 h-4 text-[#00e5ff]" />
-            <h2 className="text-xs font-semibold text-[#f8fafc] tracking-wider uppercase">
-              LEO Orbital Catalog
-            </h2>
-          </div>
-          <span className="text-xs font-mono text-[#94a3b8]">
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-[#f8fafc]">
+            Orbital Catalog
+          </h2>
+          <span className="text-xs font-mono text-[#64748b]">
             {filteredObjects.length} / {objects.length}
           </span>
         </div>
 
-        {/* Search Input */}
         <div className="relative">
-          <Search className="w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search satellite name or NORAD ID..."
-            className="w-full bg-[#06080c] border border-[#1c2436] rounded-md pl-9 pr-3 py-1.5 text-xs text-[#f8fafc] placeholder-[#64748b] focus:outline-none focus:border-[#00e5ff]/50 transition-colors"
+            placeholder="Search satellite or NORAD..."
+            className="w-full bg-[#0a0e14] border border-[#141a26] rounded pl-8 pr-3 py-1.5 text-xs text-[#f8fafc] placeholder-[#64748b] focus:outline-none focus:border-[#00e5ff]/40 transition-colors"
           />
-        </div>
-
-        {/* Object Type Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-          {(['ALL', 'PAYLOAD', 'DEBRIS', 'ROCKET_BODY'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${
-                typeFilter === t
-                  ? 'bg-[#141b27] text-[#00e5ff] border border-[#00e5ff]/40 shadow-sm'
-                  : 'bg-[#06080c] text-[#94a3b8] hover:text-[#f8fafc] border border-transparent'
-              }`}
-            >
-              {t === 'ALL' ? 'All' : t === 'ROCKET_BODY' ? 'Rocket Body' : t.charAt(0) + t.slice(1).toLowerCase()} ({typeCounts[t] || 0})
-            </button>
-          ))}
         </div>
       </div>
 
-      {/* Objects List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-[#141a27]">
+      {/* Catalog List */}
+      <div className="flex-1 overflow-y-auto divide-y divide-[#10141e]">
         {isLoading ? (
-          <div className="p-8 text-center text-xs text-[#94a3b8] flex flex-col items-center gap-2.5">
-            <div className="w-5 h-5 border-2 border-[#00e5ff] border-t-transparent rounded-full animate-spin" />
+          <div className="p-8 text-center text-xs text-[#64748b] flex flex-col items-center gap-2">
+            <div className="w-4 h-4 border-2 border-[#00e5ff] border-t-transparent rounded-full animate-spin" />
             <span>Loading satellite catalog...</span>
           </div>
         ) : filteredObjects.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#94a3b8] flex flex-col items-center gap-2.5">
-            <Filter className="w-6 h-6 text-[#64748b]" />
-            <span>No satellites match filter criteria.</span>
+          <div className="p-8 text-center text-xs text-[#64748b]">
+            No satellites match search.
           </div>
         ) : (
           filteredObjects.map((obj) => {
             const isSelected = obj.norad_id === selectedNoradId;
+
             return (
               <div
                 key={obj.norad_id}
                 onClick={() => onSelectObject(obj)}
-                className={`p-3.5 cursor-pointer transition-all ${
+                className={`p-3.5 cursor-pointer transition-colors ${
                   isSelected
-                    ? 'bg-[#121826] border-l-4 border-[#00e5ff]'
-                    : 'hover:bg-[#0c1017]'
+                    ? 'bg-[#0e1420] border-l-2 border-[#00e5ff]'
+                    : 'hover:bg-[#090d14]'
                 }`}
               >
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between mb-1">
                   <span className="font-semibold text-xs text-[#f8fafc] truncate max-w-[200px]" title={obj.name}>
                     {obj.name}
                   </span>
@@ -119,28 +87,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-[#94a3b8] mb-2">
-                  <span className="text-xs uppercase font-mono px-2 py-0.5 rounded bg-[#06080c] border border-[#1c2436]">
-                    {obj.object_type}
-                  </span>
-                  <span className="font-mono text-xs text-[#64748b]">
-                    Age: {obj.element_age_days.toFixed(1)}d
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-1.5 text-xs font-mono text-[#94a3b8] pt-1.5 border-t border-[#141a27]">
-                  <div>
-                    <span className="text-[#64748b] block text-[11px]">Inc:</span>
-                    <span>{obj.orbital_parameters.inclination_deg}&deg;</span>
-                  </div>
-                  <div>
-                    <span className="text-[#64748b] block text-[11px]">Perigee:</span>
-                    <span>{obj.orbital_parameters.perigee_altitude_km} km</span>
-                  </div>
-                  <div>
-                    <span className="text-[#64748b] block text-[11px]">Apogee:</span>
-                    <span>{obj.orbital_parameters.apogee_altitude_km} km</span>
-                  </div>
+                <div className="flex items-center justify-between text-xs text-[#64748b] font-mono">
+                  <span>{obj.object_type}</span>
+                  <span>Inc: {obj.orbital_parameters.inclination_deg}&deg; &bull; Alt: {obj.orbital_parameters.perigee_altitude_km} km</span>
                 </div>
               </div>
             );

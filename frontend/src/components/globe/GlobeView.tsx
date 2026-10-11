@@ -6,7 +6,7 @@ import worldLandData from '../../assets/world-land.json';
 import type { ConjunctionEvent, EphemerisTrajectory } from '../../api/types';
 
 const EARTH_RADIUS_KM = 6378.137;
-const SPHERE_RADIUS = 2.1;
+const SPHERE_RADIUS = 2.15;
 
 function latLonToVector3(lat: number, lon: number, altKm = 0, radiusBase = SPHERE_RADIUS): THREE.Vector3 {
   const r = radiusBase * (1.0 + altKm / EARTH_RADIUS_KM);
@@ -22,7 +22,7 @@ function latLonToVector3(lat: number, lon: number, altKm = 0, radiusBase = SPHER
 function ThreeLine({
   points,
   color,
-  opacity = 0.9
+  opacity = 0.85
 }: {
   points: THREE.Vector3[];
   color: string;
@@ -42,7 +42,7 @@ function ThreeLine({
   return <primitive object={lineObj} />;
 }
 
-// Pure-black Earth sphere with crisp, subtle dark-gray continent outlines
+// Pure-black Earth sphere with subtle dark-gray continent outlines
 function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
   const lineSegments = useMemo(() => {
     const segments: THREE.Vector3[][] = [];
@@ -78,26 +78,26 @@ function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
 
   return (
     <group>
-      {/* 1. Pure-black Earth Core (zero textures, zero blue haze) */}
+      {/* 1. Pure-black Earth Core (no textures, no atmospheric glow) */}
       <mesh>
         <sphereGeometry args={[SPHERE_RADIUS, 64, 64]} />
         <meshBasicMaterial color="#000000" />
       </mesh>
 
-      {/* 2. Restrained Equator reference ring */}
+      {/* 2. Equator reference ring */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[SPHERE_RADIUS * 1.001, SPHERE_RADIUS * 1.003, 64]} />
-        <meshBasicMaterial color="#1a2230" side={THREE.DoubleSide} />
+        <ringGeometry args={[SPHERE_RADIUS * 1.001, SPHERE_RADIUS * 1.0025, 64]} />
+        <meshBasicMaterial color="#161e2a" side={THREE.DoubleSide} />
       </mesh>
 
-      {/* 3. Subtle, crisp dark-gray continent outlines from Natural Earth vector */}
+      {/* 3. Subtle dark-gray continent outlines from Natural Earth vector */}
       {showOutlines &&
         lineSegments.map((pts, i) => (
           <ThreeLine
             key={`coastline-${i}`}
             points={pts}
-            color="#3a4556"
-            opacity={0.85}
+            color="#323c4d"
+            opacity={0.8}
           />
         ))}
     </group>
@@ -134,7 +134,7 @@ function SatelliteMarker({
   lon,
   altKm,
   color,
-  size = 0.03,
+  size = 0.025,
   isHighlighted = false
 }: {
   lat: number;
@@ -152,13 +152,13 @@ function SatelliteMarker({
         <sphereGeometry args={[size, 16, 16]} />
         <meshBasicMaterial color={color} />
       </mesh>
-      {/* Outer halo */}
+      {/* Soft halo */}
       <mesh>
-        <sphereGeometry args={[size * (isHighlighted ? 2.5 : 1.6), 16, 16]} />
+        <sphereGeometry args={[size * (isHighlighted ? 2.2 : 1.5), 16, 16]} />
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={isHighlighted ? 0.45 : 0.2}
+          opacity={isHighlighted ? 0.4 : 0.15}
         />
       </mesh>
     </group>
@@ -191,22 +191,20 @@ function EncounterBeacon({
 
   useFrame(({ clock }) => {
     if (ringRef.current) {
-      const scale = 1.0 + Math.sin(clock.getElapsedTime() * 3.5) * 0.35;
+      const scale = 1.0 + Math.sin(clock.getElapsedTime() * 3.0) * 0.3;
       ringRef.current.scale.set(scale, scale, scale);
     }
   });
 
   return (
     <group position={pos}>
-      {/* Center ping */}
       <mesh>
-        <sphereGeometry args={[0.05, 16, 16]} />
+        <sphereGeometry args={[0.045, 16, 16]} />
         <meshBasicMaterial color={beaconColor} />
       </mesh>
-      {/* Expanding pulse sphere */}
       <mesh ref={ringRef}>
-        <sphereGeometry args={[0.11, 16, 16]} />
-        <meshBasicMaterial color={beaconColor} transparent opacity={0.35} wireframe />
+        <sphereGeometry args={[0.09, 16, 16]} />
+        <meshBasicMaterial color={beaconColor} transparent opacity={0.3} wireframe />
       </mesh>
     </group>
   );
@@ -246,7 +244,7 @@ export function GlobeView({
   return (
     <div className="w-full h-full relative bg-[#000000]">
       <Canvas
-        camera={{ position: [0, 1.8, 3.8], fov: 42 }}
+        camera={{ position: [0, 1.6, 3.7], fov: 40 }}
         style={{ background: '#000000' }}
       >
         <color attach="background" args={['#000000']} />
@@ -272,7 +270,7 @@ export function GlobeView({
               lon={sat.lon}
               altKm={sat.alt}
               color={color}
-              size={isPrimary || isSecondary ? 0.045 : 0.024}
+              size={isPrimary || isSecondary ? 0.04 : 0.02}
               isHighlighted={isPrimary || isSecondary}
             />
           );
@@ -283,18 +281,18 @@ export function GlobeView({
           <TrajectoryLine
             trajectory={primaryTrajectory}
             color="#00e5ff"
-            opacity={0.95}
+            opacity={0.9}
           />
         )}
         {showOrbits && secondaryTrajectory && (
           <TrajectoryLine
             trajectory={secondaryTrajectory}
             color={secondaryColor}
-            opacity={0.9}
+            opacity={0.85}
           />
         )}
 
-        {/* Selected conjunction encounter beacon at TCA */}
+        {/* Selected encounter beacon at TCA */}
         {selectedEvent && (
           <EncounterBeacon
             lat={selectedEvent.encounter_location_wgs84.latitude_deg}
@@ -308,42 +306,14 @@ export function GlobeView({
           enableDamping
           dampingFactor={0.05}
           rotateSpeed={0.7}
-          minDistance={2.5}
-          maxDistance={9.5}
+          minDistance={2.4}
+          maxDistance={9.0}
         />
       </Canvas>
 
-      {/* Floating Viewport Legend — Accurate Aerospace Reference Labels */}
-      <div className="absolute top-4 left-4 pointer-events-none flex flex-col gap-2 bg-[#080b10]/90 p-3.5 rounded-md border border-[#1c2436] backdrop-blur-md max-w-xs shadow-xl">
-        <div className="text-xs font-semibold tracking-wider uppercase text-[#94a3b8]">
-          Geocentric 3D Reference
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#00e5ff] flex-shrink-0" />
-          <span className="text-xs text-[#f8fafc] font-medium">
-            Primary Orbit &amp; Satellites (TEME)
-          </span>
-        </div>
-        {selectedEvent && (
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: secondaryColor }}
-            />
-            <span className="text-xs text-[#f8fafc] font-medium">
-              Chaser Trajectory ({selectedEvent.screening_tier})
-            </span>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-0.5 bg-[#3a4556] flex-shrink-0" />
-          <span className="text-xs text-[#94a3b8]">
-            WGS-84 Coastlines (Natural Earth)
-          </span>
-        </div>
-        <div className="pt-1.5 border-t border-[#1c2436] text-xs text-[#64748b]">
-          TEME inertial trajectories rotated to Earth-fixed frame
-        </div>
+      {/* Minimal, non-intrusive geocentric reference tag */}
+      <div className="absolute top-4 left-4 pointer-events-none text-xs text-[#64748b] bg-[#06080c]/80 px-2.5 py-1 rounded backdrop-blur-sm border border-[#141a26]">
+        TEME Inertial &bull; WGS-84 Coastlines
       </div>
     </div>
   );
