@@ -3,7 +3,6 @@ import { Header, type DashboardTab } from './Header';
 import { MetricsBar } from './MetricsBar';
 import { AlertTable } from '../alerts/AlertTable';
 import { CatalogView } from '../objects/CatalogView';
-import { ObjectDrawer } from '../objects/ObjectDrawer';
 import { GlobeView } from '../globe/GlobeView';
 import { DisclaimerBanner } from './DisclaimerBanner';
 import {
@@ -22,7 +21,7 @@ import type {
 import { SpaceWeatherView } from '../weather/SpaceWeatherView';
 import { ModelMonitorView } from './ModelMonitorView';
 import { ReportsView } from './ReportsView';
-import { Eye, Orbit, AlertCircle, PanelRightOpen } from 'lucide-react';
+import { Eye, Orbit, AlertCircle } from 'lucide-react';
 
 interface DashboardPageProps {
   onNavigateHome?: () => void;
@@ -37,7 +36,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
 
   const [selectedEvent, setSelectedEvent] = useState<ConjunctionEvent | null>(null);
   const [selectedCatalogObject, setSelectedCatalogObject] = useState<OrbitalObject | null>(null);
-  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(true);
   const [isWeatherOpen, setIsWeatherOpen] = useState<boolean>(false);
   const [isModelOpen, setIsModelOpen] = useState<boolean>(false);
   const [isReportsOpen, setIsReportsOpen] = useState<boolean>(false);
@@ -54,7 +52,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
   const handleSelectEvent = async (event: ConjunctionEvent) => {
     setSelectedEvent(event);
     setSelectedCatalogObject(null);
-    setIsInspectorOpen(true);
     try {
       const [primaryTraj, secondaryTraj] = await Promise.all([
         fetchEphemeris(event.primary_object.norad_id, 60, 2).catch(() => null),
@@ -71,7 +68,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
   const handleSelectCatalogObject = async (obj: OrbitalObject) => {
     setSelectedCatalogObject(obj);
     setSelectedEvent(null);
-    setIsInspectorOpen(true);
     try {
       const traj = await fetchEphemeris(obj.norad_id, 60, 2).catch(() => null);
       setPrimaryTrajectory(traj);
@@ -117,20 +113,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCloseInspector = () => {
-    setIsInspectorOpen(false);
-  };
-
-<<<<<<< HEAD
-=======
-
->>>>>>> 15183ce08edcd8d13d9bdbba3bd0cb7ff47e1d58
-  const primaryObj = objects.find(
-    (o) => o.norad_id === selectedEvent?.primary_object.norad_id
-  );
-  const secondaryObj = objects.find(
-    (o) => o.norad_id === selectedEvent?.secondary_object.norad_id
-  );
 
   return (
     <div className="w-full h-full flex flex-col bg-[#070b14] text-[#f8fafc] overflow-hidden select-none font-sans">
@@ -229,30 +211,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateHome }) 
               <span>Orbits</span>
             </button>
 
-            {/* Reopen Inspector Toggle (visible when inspector is closed and an event is selected) */}
-            {!isInspectorOpen && (selectedEvent || selectedCatalogObject) && (
-              <button
-                onClick={() => setIsInspectorOpen(true)}
-                className="px-2.5 py-1 rounded bg-[#0f1728]/90 border border-[#38bdf8]/40 text-[#38bdf8] text-xs backdrop-blur-md flex items-center gap-1 cursor-pointer hover:bg-[#142036] transition-colors"
-                title="Open Telemetry Inspector"
-              >
-                <PanelRightOpen className="w-3.5 h-3.5" />
-                <span>Telemetry</span>
-              </button>
-            )}
           </div>
         </div>
-
-        {/* Right Column: Docked Telemetry & Encounter Details Inspector */}
-        {isInspectorOpen && (selectedEvent || selectedCatalogObject) && (
-          <ObjectDrawer
-            event={selectedEvent}
-            primaryObject={primaryObj}
-            secondaryObject={secondaryObj}
-            selectedCatalogObject={selectedCatalogObject}
-            onClose={handleCloseInspector}
-          />
-        )}
       </div>
 
       {/* 4. Aerospace Scientific Disclaimer Footer */}
