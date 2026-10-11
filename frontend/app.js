@@ -23,9 +23,11 @@ const pages = {
       </div>
       <div class="globe-viewport-container" id="tactical-globe-container"></div>
       <div class="globe-legend-bar">
-        <div class="legend-item"><span class="legend-dot" style="background:#65d7c2;"></span><b>ORBIT 1: LEO (ISS)</b> <small>420 km · 51.6°</small></div>
-        <div class="legend-item"><span class="legend-dot" style="background:#d9b56a;"></span><b>ORBIT 2: SSO (SENTINEL-1A)</b> <small>693 km · 98.2°</small></div>
-        <div class="legend-item"><span class="legend-dot" style="background:#f07167;"></span><b>ORBIT 3: THREAT VECTOR (CZ-4B)</b> <small>1050 km · 63.4°</small></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent);"></span><b>OBJECT A (ISS)</b> <small>420 km · PRIMARY</small></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cta);"></span><b>OBJECT B (CZ-4B)</b> <small>428 km · ENCOUNTER</small></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--success);"></span><b>TRACKED OBJECT (SENTINEL-1A)</b> <small>693 km · SSO</small></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--info-purple);"></span><b>TRACKED OBJECT (STARLINK)</b> <small>550 km · LEO</small></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--danger);"></span><b>CLOSEST APPROACH</b> <small>TCA VECTOR</small></div>
       </div>
     </section>
     <section class="panel feed-panel"><div class="panel-head"><div><h2>System connections</h2><p>Service status reported by the project backend</p></div></div><div class="connection-list"><div><span class="connection-symbol">◉</span><span><b>Orbital data service</b><small>Waiting for backend connection</small></span><em>NOT CONNECTED</em></div><div><span class="connection-symbol">☼</span><span><b>Space weather service</b><small>Waiting for backend connection</small></span><em>NOT CONNECTED</em></div><div><span class="connection-symbol">⌘</span><span><b>Risk model service</b><small>Waiting for backend connection</small></span><em>NOT CONNECTED</em></div></div></section>`,
