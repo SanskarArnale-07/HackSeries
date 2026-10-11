@@ -34,6 +34,21 @@ export function App() {
   const [showOutlines, setShowOutlines] = useState<boolean>(true);
   const [showOrbits, setShowOrbits] = useState<boolean>(true);
 
+  // When an event is selected, fetch ephemeris trajectories for both objects
+  const handleSelectEvent = async (event: ConjunctionEvent) => {
+    setSelectedEvent(event);
+    try {
+      const [primaryTraj, secondaryTraj] = await Promise.all([
+        fetchEphemeris(event.primary_object.norad_id, 60, 2).catch(() => null),
+        fetchEphemeris(event.secondary_object.norad_id, 60, 2).catch(() => null)
+      ]);
+      setPrimaryTrajectory(primaryTraj);
+      setSecondaryTrajectory(secondaryTraj);
+    } catch (err) {
+      console.error('Failed to load ephemeris for selected event', err);
+    }
+  };
+
   // Load telemetry, catalog, screened conjunctions, and space weather
   const loadData = async () => {
     setIsLoading(true);
@@ -66,39 +81,8 @@ export function App() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // When an event is selected, fetch ephemeris trajectories for both objects
-  const handleSelectEvent = async (event: ConjunctionEvent) => {
-    setSelectedEvent(event);
-    try {
-      const [primaryTraj, secondaryTraj] = await Promise.all([
-        fetchEphemeris(event.primary_object.norad_id, 60, 2).catch(() => null),
-        fetchEphemeris(event.secondary_object.norad_id, 60, 2).catch(() => null)
-      ]);
-      setPrimaryTrajectory(primaryTraj);
-      setSecondaryTrajectory(secondaryTraj);
-    } catch (err) {
-      console.error('Failed to load ephemeris for selected event', err);
-    }
-  };
-
-  // Map background constellation satellites for 3D globe visualization
-  const allSatellites = objects.slice(0, 40).map((obj) => {
-    // Estimate instantaneous lat/lon from RAAN and Mean Anomaly for point visualization
-    const raan = obj.orbital_parameters.raan_deg ?? 0;
-    const ma = obj.orbital_parameters.mean_anomaly_deg ?? 0;
-    const inc = obj.orbital_parameters.inclination_deg;
-    const lat = Math.sin((ma * Math.PI) / 180) * inc;
-    const lon = ((raan + ma) % 360) - 180;
-    return {
-      norad_id: obj.norad_id,
-      name: obj.name,
-      lat,
-      lon,
-      alt: obj.orbital_parameters.perigee_altitude_km
-    };
-  });
 
   const primaryObj = objects.find((o) => o.norad_id === selectedEvent?.primary_object.norad_id);
   const secondaryObj = objects.find((o) => o.norad_id === selectedEvent?.secondary_object.norad_id);
@@ -141,13 +125,14 @@ export function App() {
           />
         </div>
 
-        {/* Center: 3D Pure-Black Earth Visualization Canvas */}
+        {/* Center: Tactical 3D Orthographic Vector Globe */}
         <div className="flex-1 h-full relative">
           <GlobeView
             selectedEvent={selectedEvent}
             primaryTrajectory={primaryTrajectory}
             secondaryTrajectory={secondaryTrajectory}
-            allSatellites={allSatellites}
+            events={events}
+            onSelectEvent={handleSelectEvent}
             showOutlines={showOutlines}
             showOrbits={showOrbits}
           />
