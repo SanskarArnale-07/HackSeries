@@ -1,320 +1,236 @@
-import { useMemo, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import * as THREE from 'three';
-import worldLandData from '../../assets/world-land.json';
+/**
+ * GlobeView.tsx
+ *
+ * Bridge component connecting OrbitGuard real astrodynamics telemetry to TacticalGlobe3D.
+ * Consumes:
+ *   - Conjunction events (real WGS-84 encounter locations)
+ *   - SGP4 orbital ephemeris trajectories (lat/lon time-series)
+ *   - Primary & Secondary object real instantaneous positions
+ *   - Strict aerospace compliance: never treats Keplerian angles as lat/lon.
+ */
+
+import React, { useMemo } from 'react';
+import { TacticalGlobe3D } from './TacticalGlobe3D';
+import type { TacticalGlobeMarker, TacticalTrajectory } from './TacticalGlobe3D';
 import type { ConjunctionEvent, EphemerisTrajectory } from '../../api/types';
-
-const EARTH_RADIUS_KM = 6378.137;
-const SPHERE_RADIUS = 2.25;
-
-function latLonToVector3(lat: number, lon: number, altKm = 0, radiusBase = SPHERE_RADIUS): THREE.Vector3 {
-  const r = radiusBase * (1.0 + altKm / EARTH_RADIUS_KM);
-  const phi = (90 - lat) * (Math.PI / 180);
-  const theta = (lon + 180) * (Math.PI / 180);
-  const x = -r * Math.sin(phi) * Math.cos(theta);
-  const z = r * Math.sin(phi) * Math.sin(theta);
-  const y = r * Math.cos(phi);
-  return new THREE.Vector3(x, y, z);
-}
-
-// Custom line primitive component to prevent collision with SVG <line>
-function ThreeLine({
-  points,
-  color,
-  opacity = 0.85
-}: {
-  points: THREE.Vector3[];
-  color: string;
-  opacity?: number;
-}) {
-  const lineObj = useMemo(() => {
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const material = new THREE.LineBasicMaterial({
-      color: new THREE.Color(color),
-      transparent: opacity < 1.0,
-      opacity,
-      linewidth: 1
-    });
-    return new THREE.Line(geometry, material);
-  }, [points, color, opacity]);
-
-  return <primitive object={lineObj} />;
-}
-
-// Pure-black Earth sphere with subtle dark-gray continent outlines
-function PureBlackEarth({ showOutlines = true }: { showOutlines?: boolean }) {
-  const lineSegments = useMemo(() => {
-    const segments: THREE.Vector3[][] = [];
-    if (!worldLandData || !worldLandData.features) return segments;
-
-    for (const feature of worldLandData.features as any[]) {
-      const geom = feature.geometry;
-      if (!geom) continue;
-
-      if (geom.type === 'LineString') {
-        const pts: THREE.Vector3[] = geom.coordinates.map((c: [number, number]) =>
-          latLonToVector3(c[1], c[0], 2.0)
-        );
-        segments.push(pts);
-      } else if (geom.type === 'MultiLineString') {
-        for (const line of geom.coordinates) {
-          const pts: THREE.Vector3[] = line.map((c: [number, number]) =>
-            latLonToVector3(c[1], c[0], 2.0)
-          );
-          segments.push(pts);
-        }
-      } else if (geom.type === 'Polygon') {
-        for (const ring of geom.coordinates) {
-          const pts: THREE.Vector3[] = ring.map((c: [number, number]) =>
-            latLonToVector3(c[1], c[0], 2.0)
-          );
-          segments.push(pts);
-        }
-      }
-    }
-    return segments;
-  }, []);
-
-  return (
-    <group>
-      {/* 1. Pure-black Earth Core (no daytime imagery, no atmospheric glow) */}
-      <mesh>
-        <sphereGeometry args={[SPHERE_RADIUS, 64, 64]} />
-        <meshBasicMaterial color="#000000" />
-      </mesh>
-
-      {/* 2. Equator reference ring */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[SPHERE_RADIUS * 1.001, SPHERE_RADIUS * 1.0025, 64]} />
-        <meshBasicMaterial color="#141f33" side={THREE.DoubleSide} />
-      </mesh>
-
-      {/* 3. Subtle dark-gray continent outlines from Natural Earth vector */}
-      {showOutlines &&
-        lineSegments.map((pts, i) => (
-          <ThreeLine
-            key={`coastline-${i}`}
-            points={pts}
-            color="#2f3d52"
-            opacity={0.85}
-          />
-        ))}
-    </group>
-  );
-}
-
-// Orbit spline trajectory rendered from backend SGP4 ephemeris
-function TrajectoryLine({
-  trajectory,
-  color,
-  opacity = 0.9
-}: {
-  trajectory: EphemerisTrajectory;
-  color: string;
-  opacity?: number;
-}) {
-  const linePoints = useMemo(() => {
-    const pts: THREE.Vector3[] = [];
-    for (const pt of trajectory.points) {
-      if (pt.is_valid && pt.lat_deg !== null && pt.lon_deg !== null && pt.alt_km !== null) {
-        pts.push(latLonToVector3(pt.lat_deg, pt.lon_deg, pt.alt_km));
-      }
-    }
-    return pts;
-  }, [trajectory]);
-
-  if (linePoints.length < 2) return null;
-  return <ThreeLine points={linePoints} color={color} opacity={opacity} />;
-}
-
-// Satellite marker dot
-function SatelliteMarker({
-  lat,
-  lon,
-  altKm,
-  color,
-  size = 0.024,
-  isHighlighted = false
-}: {
-  lat: number;
-  lon: number;
-  altKm: number;
-  color: string;
-  size?: number;
-  isHighlighted?: boolean;
-}) {
-  const pos = useMemo(() => latLonToVector3(lat, lon, altKm), [lat, lon, altKm]);
-
-  return (
-    <group position={pos}>
-      <mesh>
-        <sphereGeometry args={[size, 16, 16]} />
-        <meshBasicMaterial color={color} />
-      </mesh>
-      {/* Restrained soft halo */}
-      <mesh>
-        <sphereGeometry args={[size * (isHighlighted ? 2.0 : 1.4), 16, 16]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={isHighlighted ? 0.35 : 0.12}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-// Encounter Beacon Pulse at Time of Closest Approach (TCA)
-function EncounterBeacon({
-  lat,
-  lon,
-  altKm,
-  tier
-}: {
-  lat: number;
-  lon: number;
-  altKm: number;
-  tier: string;
-}) {
-  const pos = useMemo(() => latLonToVector3(lat, lon, altKm), [lat, lon, altKm]);
-  const ringRef = useRef<THREE.Mesh>(null);
-
-  const beaconColor =
-    tier === 'CRITICAL'
-      ? '#ef4444'
-      : tier === 'WARNING'
-      ? '#f59e0b'
-      : tier === 'WATCH'
-      ? '#eab308'
-      : '#10b981';
-
-  useFrame(({ clock }) => {
-    if (ringRef.current) {
-      const scale = 1.0 + Math.sin(clock.getElapsedTime() * 3.0) * 0.25;
-      ringRef.current.scale.set(scale, scale, scale);
-    }
-  });
-
-  return (
-    <group position={pos}>
-      <mesh>
-        <sphereGeometry args={[0.045, 16, 16]} />
-        <meshBasicMaterial color={beaconColor} />
-      </mesh>
-      <mesh ref={ringRef}>
-        <sphereGeometry args={[0.085, 16, 16]} />
-        <meshBasicMaterial color={beaconColor} transparent opacity={0.3} wireframe />
-      </mesh>
-    </group>
-  );
-}
+import { Compass } from 'lucide-react';
 
 export interface GlobeViewProps {
   selectedEvent: ConjunctionEvent | null;
   primaryTrajectory: EphemerisTrajectory | null;
   secondaryTrajectory: EphemerisTrajectory | null;
-  allSatellites?: Array<{ norad_id: number; lat: number; lon: number; alt: number; name: string }>;
+  events?: ConjunctionEvent[];
+  onSelectEvent?: (event: ConjunctionEvent) => void;
   showOutlines?: boolean;
   showOrbits?: boolean;
 }
 
-export function GlobeView({
+export const GlobeView: React.FC<GlobeViewProps> = ({
   selectedEvent,
   primaryTrajectory,
   secondaryTrajectory,
-  allSatellites = [],
+  events = [],
+  onSelectEvent,
   showOutlines = true,
   showOrbits = true
-}: GlobeViewProps) {
-  const secondaryColor = useMemo(() => {
-    if (!selectedEvent) return '#f59e0b';
-    switch (selectedEvent.screening_tier) {
-      case 'CRITICAL':
-        return '#ef4444';
-      case 'WARNING':
-        return '#f59e0b';
-      case 'WATCH':
-        return '#eab308';
-      default:
-        return '#10b981';
+}) => {
+  // Convert SGP4 trajectories into TacticalGlobe format
+  const trajectories: TacticalTrajectory[] = useMemo(() => {
+    const list: TacticalTrajectory[] = [];
+    if (!showOrbits) return list;
+
+    if (primaryTrajectory && primaryTrajectory.points) {
+      const validPoints = primaryTrajectory.points
+        .filter((p) => p.is_valid && p.lat_deg !== null && p.lon_deg !== null)
+        .map((p) => ({ lat: p.lat_deg as number, lon: p.lon_deg as number }));
+
+      if (validPoints.length >= 2) {
+        list.push({
+          id: `traj-primary-${primaryTrajectory.norad_id}`,
+          name: `${primaryTrajectory.name} Orbit`,
+          color: '#00f0ff',
+          opacity: 0.9,
+          strokeWidth: 1.6,
+          points: validPoints
+        });
+      }
     }
-  }, [selectedEvent]);
+
+    if (secondaryTrajectory && secondaryTrajectory.points) {
+      const validPoints = secondaryTrajectory.points
+        .filter((p) => p.is_valid && p.lat_deg !== null && p.lon_deg !== null)
+        .map((p) => ({ lat: p.lat_deg as number, lon: p.lon_deg as number }));
+
+      if (validPoints.length >= 2) {
+        const tierCol =
+          selectedEvent?.screening_tier === 'CRITICAL'
+            ? '#ff3b30'
+            : selectedEvent?.screening_tier === 'WARNING'
+            ? '#ff9500'
+            : '#eab308';
+
+        list.push({
+          id: `traj-secondary-${secondaryTrajectory.norad_id}`,
+          name: `${secondaryTrajectory.name} Orbit`,
+          color: tierCol,
+          opacity: 0.85,
+          strokeWidth: 1.4,
+          dashArray: '3,3',
+          points: validPoints
+        });
+      }
+    }
+
+    return list;
+  }, [primaryTrajectory, secondaryTrajectory, selectedEvent, showOrbits]);
+
+  // Construct real markers from verified backend coordinates
+  const markers: TacticalGlobeMarker[] = useMemo(() => {
+    const list: TacticalGlobeMarker[] = [];
+
+    // 1. Encounter beacon markers for all screened conjunction events
+    for (const ev of events) {
+      const isSelected = selectedEvent?.event_id === ev.event_id;
+      const tierColor =
+        ev.screening_tier === 'CRITICAL'
+          ? '#ff3b30'
+          : ev.screening_tier === 'WARNING'
+          ? '#ff9500'
+          : ev.screening_tier === 'WATCH'
+          ? '#eab308'
+          : '#10b981';
+
+      list.push({
+        id: `event-${ev.event_id}`,
+        label: isSelected
+          ? `TCA: ${ev.primary_object.name}`
+          : `${ev.primary_object.name} / ${ev.secondary_object.name}`,
+        description: `Miss: ${ev.miss_distance_km.toFixed(3)} km\nRel Speed: ${ev.relative_speed_km_s.toFixed(2)} km/s\nAlt: ${ev.encounter_location_wgs84.altitude_km.toFixed(1)} km\nTCA: ${ev.tca_utc}`,
+        latitude: ev.encounter_location_wgs84.latitude_deg,
+        longitude: ev.encounter_location_wgs84.longitude_deg,
+        color: tierColor,
+        size: isSelected ? 7 : 4.5,
+        isPulsing: isSelected || ev.screening_tier === 'CRITICAL',
+        objectType: 'CONJUNCTION',
+        badge: `${ev.screening_tier} TCA`,
+        onClick: () => onSelectEvent && onSelectEvent(ev)
+      });
+    }
+
+    // 2. Real instantaneous position of Selected Primary Object (from real SGP4 ephemeris)
+    if (primaryTrajectory && primaryTrajectory.points && primaryTrajectory.points.length > 0) {
+      const p0 = primaryTrajectory.points[0];
+      if (p0.is_valid && p0.lat_deg !== null && p0.lon_deg !== null) {
+        list.push({
+          id: `sat-primary-${primaryTrajectory.norad_id}`,
+          label: `${primaryTrajectory.name}`,
+          description: `NORAD ID: ${primaryTrajectory.norad_id}\nPropagated Lat: ${p0.lat_deg.toFixed(2)}°\nLon: ${p0.lon_deg.toFixed(2)}°\nAlt: ${p0.alt_km?.toFixed(1) ?? 'N/A'} km\nStatus: SGP4 VALID`,
+          latitude: p0.lat_deg,
+          longitude: p0.lon_deg,
+          color: '#00f0ff',
+          size: 5.5,
+          isPulsing: true,
+          objectType: 'PAYLOAD',
+          badge: 'PRIMARY PAYLOAD (NOW)'
+        });
+      }
+    }
+
+    // 3. Real instantaneous position of Selected Secondary Object (from real SGP4 ephemeris)
+    if (secondaryTrajectory && secondaryTrajectory.points && secondaryTrajectory.points.length > 0) {
+      const p0 = secondaryTrajectory.points[0];
+      if (p0.is_valid && p0.lat_deg !== null && p0.lon_deg !== null) {
+        const secType = selectedEvent?.secondary_object.type ?? 'UNKNOWN';
+        const typeCol =
+          secType === 'DEBRIS'
+            ? '#ef4444'
+            : secType === 'ROCKET_BODY'
+            ? '#f59e0b'
+            : '#a855f7';
+
+        list.push({
+          id: `sat-secondary-${secondaryTrajectory.norad_id}`,
+          label: `${secondaryTrajectory.name}`,
+          description: `NORAD ID: ${secondaryTrajectory.norad_id}\nType: ${secType}\nPropagated Lat: ${p0.lat_deg.toFixed(2)}°\nLon: ${p0.lon_deg.toFixed(2)}°\nAlt: ${p0.alt_km?.toFixed(1) ?? 'N/A'} km\nStatus: SGP4 VALID`,
+          latitude: p0.lat_deg,
+          longitude: p0.lon_deg,
+          color: typeCol,
+          size: 5.5,
+          isPulsing: true,
+          objectType: secType as any,
+          badge: `CHASER ${secType} (NOW)`
+        });
+      }
+    }
+
+    return list;
+  }, [events, selectedEvent, primaryTrajectory, secondaryTrajectory, onSelectEvent]);
 
   return (
-    <div className="w-full h-full relative bg-[#070b14]">
-      <Canvas
-        camera={{ position: [0, 0.7, 3.5], fov: 38 }}
-        style={{ background: '#070b14' }}
-      >
-        <color attach="background" args={['#070b14']} />
-        <ambientLight intensity={0.45} />
+    <div className="w-full h-full relative bg-[#000000]">
+      {/* Tactical SVG 3D Orthographic Globe */}
+      <TacticalGlobe3D
+        markers={markers}
+        trajectories={trajectories}
+        showOutlines={showOutlines}
+        showOrbits={showOrbits}
+        showGrid={true}
+        showStars={true}
+        autoRotate={true}
+        autoRotateSpeed={3.0}
+        rotateY={18}
+        glowColor="#00f0ff"
+        glowIntensity={0.35}
+        oceanColor="#04070c"
+        landFill="#0b1017"
+        landStroke="#1e293b"
+        strokeWidth={0.65}
+        hoverColor="#13273e"
+        className="w-full h-full"
+      />
 
-        {/* Pure-black Earth globe with vector continent outlines */}
-        <PureBlackEarth showOutlines={showOutlines} />
+      {/* Floating Viewport Legend & Aerospace Provenance */}
+      <div className="absolute top-4 left-4 pointer-events-none flex flex-col gap-1.5 text-xs font-mono bg-black/75 p-3 rounded border border-white/10 backdrop-blur-md shadow-2xl z-20 max-w-xs">
+        <div className="flex items-center gap-1.5 text-[#00f0ff] text-[10px] tracking-wider uppercase font-bold border-b border-white/10 pb-1">
+          <Compass className="w-3.5 h-3.5" />
+          Tactical Orthographic Globe (WGS-84)
+        </div>
 
-        {/* Background constellation satellites */}
-        {allSatellites.map((sat) => {
-          const isPrimary = selectedEvent?.primary_object.norad_id === sat.norad_id;
-          const isSecondary = selectedEvent?.secondary_object.norad_id === sat.norad_id;
-          const color = isPrimary
-            ? '#00e5ff'
-            : isSecondary
-            ? secondaryColor
-            : '#38bdf8';
+        {/* Legend Item: Primary */}
+        <div className="flex items-center gap-2 pt-0.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#00f0ff] ring-1 ring-[#00f0ff]/50" />
+          <span className="text-[#f0f4f8] text-[11px]">Primary Payload (Instantaneous)</span>
+        </div>
 
-          return (
-            <SatelliteMarker
-              key={`sat-${sat.norad_id}`}
-              lat={sat.lat}
-              lon={sat.lon}
-              altKm={sat.alt}
-              color={color}
-              size={isPrimary || isSecondary ? 0.038 : 0.02}
-              isHighlighted={isPrimary || isSecondary}
-            />
-          );
-        })}
+        {/* Legend Item: Chaser / Encounter */}
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#ff9500] ring-1 ring-[#ff9500]/50" />
+          <span className="text-[#f0f4f8] text-[11px]">Secondary Object / Chaser</span>
+        </div>
 
-        {/* Selected conjunction event trajectories */}
-        {showOrbits && primaryTrajectory && (
-          <TrajectoryLine
-            trajectory={primaryTrajectory}
-            color="#00e5ff"
-            opacity={0.92}
-          />
-        )}
-        {showOrbits && secondaryTrajectory && (
-          <TrajectoryLine
-            trajectory={secondaryTrajectory}
-            color={secondaryColor}
-            opacity={0.88}
-          />
-        )}
+        {/* Legend Item: Critical TCA Beacon */}
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#ff3b30] animate-ping" />
+          <span className="text-[#f0f4f8] text-[11px]">Critical Conjunction TCA</span>
+        </div>
 
-        {/* Selected encounter beacon at TCA */}
-        {selectedEvent && (
-          <EncounterBeacon
-            lat={selectedEvent.encounter_location_wgs84.latitude_deg}
-            lon={selectedEvent.encounter_location_wgs84.longitude_deg}
-            altKm={selectedEvent.encounter_location_wgs84.altitude_km}
-            tier={selectedEvent.screening_tier}
-          />
-        )}
+        {/* Legend Item: Coastlines & Grid */}
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-0.5 bg-[#1e293b]" />
+          <span className="text-[#8a99ad] text-[10px]">Natural Earth Vector Coastlines</span>
+        </div>
 
-        <OrbitControls
-          enableDamping
-          dampingFactor={0.05}
-          rotateSpeed={0.7}
-          minDistance={2.5}
-          maxDistance={8.5}
-        />
-      </Canvas>
-
-      {/* Discreet Coordinate Frame Identifier */}
-      <div className="absolute top-3.5 left-4 pointer-events-none text-[11px] font-mono text-[#64748b] bg-[#090e18]/85 px-2.5 py-1 rounded backdrop-blur-md border border-[#172236]">
-        TEME Inertial Frame &bull; WGS-84 Coastlines
+        {/* Provenance Indicator */}
+        <div className="mt-1 pt-1.5 border-t border-white/10 text-[9px] text-[#8a99ad] leading-tight">
+          <div className="text-emerald-400 flex items-center gap-1 font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            Real SGP4 Propagated Geodesy
+          </div>
+          <div className="opacity-75 pt-0.5">
+            Angles (RAAN/MA) never coerced into lat/lon. Backside markers auto-culled.
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};
