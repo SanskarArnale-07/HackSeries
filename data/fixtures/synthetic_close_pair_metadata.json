@@ -1,0 +1,11 @@
+{
+  "scenario_name": "SYNTHETIC_BENCHMARK_ENCOUNTER_01",
+  "primary_norad": 99001,
+  "secondary_norad": 99002,
+  "description": "Calibrated co-planar LEO close approach pair for deterministic screening validation",
+  "expected_min_distance_bounds_km": [
+    0.5,
+    25.0
+  ],
+  "expected_relative_speed_approx_km_s": 0.15
+}

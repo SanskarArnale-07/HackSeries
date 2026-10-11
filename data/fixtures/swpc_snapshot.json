@@ -1,0 +1,25 @@
+{
+  "source": "NOAA_SWPC",
+  "timestamp_utc": "2026-10-11T12:00:00Z",
+  "is_cached": true,
+  "planetary_k_index": {
+    "time_tag": "2026-10-11T06:30:00",
+    "kp_index": 2,
+    "estimated_kp": 1.67,
+    "kp": "2M"
+  },
+  "solar_radio_flux_f107": {
+    "time_tag": "2026-08-31T17:00:00",
+    "frequency": 2800,
+    "flux": 107.0,
+    "reporting_schedule": "Morning",
+    "avg_begin_date": null,
+    "ninety_day_mean": null,
+    "rec_count": null
+  },
+  "geomagnetic_storm_status": "QUIET",
+  "contextual_notes": {
+    "kp_interpretation": "Kp < 4: Geomagnetic activity quiet to unsettled. Upper-atmospheric density nominal.",
+    "f107_interpretation": "F10.7 ~ 150 sfu: Solar EUV heating moderate. Drag perturbation within standard SGP4 bounds."
+  }
+}
