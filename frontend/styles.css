@@ -193,12 +193,12 @@ body {
 
 .nav-item.active {
   background: var(--accent-soft);
-  color: var(--accent);
-  box-shadow: inset 2px 0 var(--accent);
+  color: var(--cta);
+  box-shadow: inset 2px 0 var(--cta);
 }
 
 .nav-item.active > span {
-  color: var(--accent);
+  color: var(--cta);
 }
 
 .sidebar-bottom {
