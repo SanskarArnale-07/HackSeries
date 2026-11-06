@@ -33,3 +33,6 @@ class CatalogSummary(BaseModel):
     stale_objects: int = 0
     rejected_records: int = 0
     last_ingested_utc: str | None = None
+    data_source: str = "CELESTRAK"
+    is_live: bool = False
+    data_age_seconds: float = 0.0

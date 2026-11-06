@@ -68,12 +68,18 @@ def execute_conjunction_screening(
     num_steps = len(time_grid)
     conjunction_events: List[ConjunctionEventDto] = []
     
-    # Pre-propagate all unique objects once over the coarse grid
+    # Pre-propagate only objects that appear in candidate pairs over the coarse grid
+    candidate_ids = set()
+    for obj_a, obj_b in candidate_pairs:
+        candidate_ids.add(obj_a.norad_id)
+        candidate_ids.add(obj_b.norad_id)
+        
     sat_cache = {}
     for obj in objects:
-        satrec = SGP4Propagator.create_satrec(obj.line1, obj.line2)
-        pos, _, valid = SGP4Propagator.propagate_state_vectors(satrec, time_grid)
-        sat_cache[obj.norad_id] = (satrec, pos, valid)
+        if obj.norad_id in candidate_ids:
+            satrec = SGP4Propagator.create_satrec(obj.line1, obj.line2)
+            pos, _, valid = SGP4Propagator.propagate_state_vectors(satrec, time_grid)
+            sat_cache[obj.norad_id] = (satrec, pos, valid)
     
     # 2. Stage 2 & 3: Coarse search & fine refinement per candidate pair
     for obj_a, obj_b in candidate_pairs:

@@ -42,20 +42,23 @@ def load_orbital_catalog(max_objects: int = 100, force_offline: bool = False) ->
 
     # Attempt live retrieval
     live_text = None
-    try:
-        # Use stations or active
-        url = settings.CELESTRAK_STATIONS_URL
-        with httpx.Client(timeout=settings.HTTP_TIMEOUT_SECONDS) as client:
-            resp = client.get(url)
-            if resp.status_code == 200 and "1 " in resp.text and "2 " in resp.text:
-                live_text = resp.text
-                save_tle_cache(live_text)
-    except Exception:
-        live_text = None
+    if not force_offline and not settings.OFFLINE_MODE:
+        try:
+            # Use stations or active
+            url = settings.CELESTRAK_STATIONS_URL
+            with httpx.Client(timeout=settings.HTTP_TIMEOUT_SECONDS) as client:
+                resp = client.get(url)
+                if resp.status_code == 200 and "1 " in resp.text and "2 " in resp.text:
+                    parsed_objs, _ = parse_tle_catalog_text(resp.text)
+                    if len(parsed_objs) >= max_objects:
+                        live_text = resp.text
+                        save_tle_cache(live_text)
+        except Exception:
+            live_text = None
 
     if live_text:
         objs, diag = parse_tle_catalog_text(live_text)
-        if objs:
+        if len(objs) >= max_objects:
             return IngestionResult(
                 objects=objs[:max_objects],
                 diagnostics=diag,
@@ -64,11 +67,11 @@ def load_orbital_catalog(max_objects: int = 100, force_offline: bool = False) ->
                 data_age_seconds=0.0
             )
 
-    # Check cache
+    # Check cache (accept cache if it contains the full dataset)
     cached_text, cache_age = get_cached_tle_data()
     if cached_text:
         objs, diag = parse_tle_catalog_text(cached_text)
-        if objs:
+        if len(objs) >= max_objects:
             return IngestionResult(
                 objects=objs[:max_objects],
                 diagnostics=diag,
@@ -77,13 +80,13 @@ def load_orbital_catalog(max_objects: int = 100, force_offline: bool = False) ->
                 data_age_seconds=cache_age or 0.0
             )
 
-    # Fallback to committed offline fixture
+    # Fallback to committed offline fixture (contains 100 verified satellite records)
     fixture_text = load_fixture_data()
     objs, diag = parse_tle_catalog_text(fixture_text)
     return IngestionResult(
         objects=objs[:max_objects],
         diagnostics=diag,
         is_live=False,
-        source_name="LOCAL_FIXTURE_FALLBACK",
+        source_name="LOCAL_FIXTURE_FALLBACK" if not (force_offline or settings.OFFLINE_MODE) else "LOCAL_FIXTURE_OFFLINE",
         data_age_seconds=0.0
     )

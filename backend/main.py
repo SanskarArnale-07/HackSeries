@@ -40,6 +40,8 @@ app.add_middleware(
 async def add_aerospace_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Scientific-Disclaimer"] = SCIENTIFIC_DISCLAIMER_TEXT
+    response.headers["X-Coordinate-Frame-Physics"] = "TEME"
+    response.headers["X-Coordinate-Frame-Display"] = "WGS84-ECEF"
     return response
 
 # Register API Routers
