@@ -14,6 +14,9 @@ def get_health():
         "catalog_size": len(app_state.objects),
         "screening_engine_status": "ONLINE",
         "data_source": app_state.data_source,
+        "is_live": app_state.is_live,
         "is_offline_mode": app_state.is_offline_mode,
+        "last_update_utc": app_state.last_update_utc,
+        "data_age_seconds": app_state.data_age_seconds,
         "events_screened": app_state.conjunctions.screening_metadata.events_count if app_state.conjunctions else 0
     }

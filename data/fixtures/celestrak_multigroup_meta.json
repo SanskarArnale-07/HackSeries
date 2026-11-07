@@ -1,0 +1,16 @@
+{
+  "retrieved_utc": "2026-11-06T20:52:45Z",
+  "total_unique_records": 532,
+  "group_breakdown": {
+    "active": 0,
+    "stations": 19,
+    "weather": 74,
+    "gps-ops": 32,
+    "galileo": 32,
+    "glo-ops": 27,
+    "beidou": 54,
+    "resource": 167,
+    "military": 45,
+    "cubesat": 85
+  }
+}

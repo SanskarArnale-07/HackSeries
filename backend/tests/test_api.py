@@ -18,6 +18,8 @@ def test_health_endpoint(client):
     assert data["service"] == "TRAJACTRA_BACKEND"
     assert data["catalog_size"] > 0
     assert "X-Scientific-Disclaimer" in resp.headers
+    assert resp.headers.get("X-Coordinate-Frame-Physics") == "TEME"
+    assert resp.headers.get("X-Coordinate-Frame-Display") == "WGS84-ECEF"
 
 def test_objects_endpoint(client):
     resp = client.get("/api/v1/objects?limit=5")

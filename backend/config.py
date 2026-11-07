@@ -38,13 +38,40 @@ class Settings:
     FIXTURES_DIR: Path = DATA_DIR / "fixtures"
     
     # Upstream data URLs
+    CELESTRAK_GP_BASE_URL: str = "https://celestrak.org/NORAD/elements/gp.php"
     CELESTRAK_STATIONS_URL: str = "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle"
     CELESTRAK_ACTIVE_URL: str = "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle"
+    CELESTRAK_ACTIVE_JSON_URL: str = "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=JSON"
     SWPC_KP_URL: str = "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
     SWPC_F107_URL: str = "https://services.swpc.noaa.gov/json/f107_cm_flux.json"
     
+    # CelesTrak Multi-Group Harvesting Configuration
+    CELESTRAK_TARGET_GROUPS: list[str] = [
+        "active",
+        "stations",
+        "weather",
+        "gps-ops",
+        "galileo",
+        "glo-ops",
+        "beidou",
+        "resource",
+        "military",
+        "cubesat",
+        "oneweb",
+        "iridium-NEXT",
+        "cosmos-2251-debris",
+        "iridium-33-debris"
+    ]
+    
+    # CelesTrak Caching & Throttling Policy (CelesTrak updates GP elements every 2 hours)
+    CELESTRAK_CACHE_TTL_SECONDS: float = 7200.0  # 2 hours
+    CELESTRAK_USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 (TRAJACTRA/1.0 Aerospace Research)"
+    MAX_CONJUNCTION_SCREENING_PAIRS: int = 15000  # Operational pairing budget for fast screening across massive catalogs
+    
     # Local fallback file paths
     CELESTRAK_FIXTURE_PATH: Path = FIXTURES_DIR / "celestrak_snapshot.txt"
+    CELESTRAK_ACTIVE_CACHE_PATH: Path = CACHE_DIR / "celestrak_active_cache.json"
+    CELESTRAK_ACTIVE_FIXTURE_PATH: Path = FIXTURES_DIR / "celestrak_active_snapshot.json"
     SWPC_FIXTURE_PATH: Path = FIXTURES_DIR / "swpc_snapshot.json"
     SYNTHETIC_FIXTURE_PATH: Path = FIXTURES_DIR / "synthetic_close_pair.tle"
     SYNTHETIC_METADATA_PATH: Path = FIXTURES_DIR / "synthetic_close_pair_metadata.json"

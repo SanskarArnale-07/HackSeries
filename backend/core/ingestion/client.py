@@ -56,21 +56,19 @@ def load_orbital_catalog(max_objects: int = 100, force_offline: bool = False) ->
     # Attempt live retrieval with timeout <= 2.5s
     live_text = None
     try:
-        url = settings.CELESTRAK_ACTIVE_URL if max_objects > 25 else settings.CELESTRAK_STATIONS_URL
+        # Use stations or active
+        url = settings.CELESTRAK_STATIONS_URL
         with httpx.Client(timeout=settings.HTTP_TIMEOUT_SECONDS) as client:
             resp = client.get(url)
             if resp.status_code == 200 and "1 " in resp.text and "2 " in resp.text:
-                candidate_text = resp.text
-                cand_objs, _ = parse_tle_catalog_text(candidate_text)
-                if len(cand_objs) >= 50:
-                    live_text = candidate_text
-                    save_tle_cache(live_text)
+                live_text = resp.text
+                save_tle_cache(live_text)
     except Exception:
         live_text = None
 
     if live_text:
         objs, diag = parse_tle_catalog_text(live_text)
-        if objs:
+        if len(objs) >= max_objects:
             return IngestionResult(
                 objects=objs[:max_objects],
                 diagnostics=diag,
@@ -79,7 +77,20 @@ def load_orbital_catalog(max_objects: int = 100, force_offline: bool = False) ->
                 data_age_seconds=0.0
             )
 
-    # Fallback to committed offline fixture (100 objects)
+    # Check cache
+    cached_text, cache_age = get_cached_tle_data()
+    if cached_text:
+        objs, diag = parse_tle_catalog_text(cached_text)
+        if objs:
+            return IngestionResult(
+                objects=objs[:max_objects],
+                diagnostics=diag,
+                is_live=False,
+                source_name="LOCAL_CACHE",
+                data_age_seconds=cache_age or 0.0
+            )
+
+    # Fallback to committed offline fixture
     fixture_text = load_fixture_data()
     objs, diag = parse_tle_catalog_text(fixture_text)
     save_tle_cache(fixture_text)
@@ -87,6 +98,6 @@ def load_orbital_catalog(max_objects: int = 100, force_offline: bool = False) ->
         objects=objs[:max_objects],
         diagnostics=diag,
         is_live=False,
-        source_name="LOCAL_FIXTURE_FALLBACK",
+        source_name="LOCAL_FIXTURE_FALLBACK" if not (force_offline or settings.OFFLINE_MODE) else "LOCAL_FIXTURE_OFFLINE",
         data_age_seconds=0.0
     )
