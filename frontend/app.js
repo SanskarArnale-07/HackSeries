@@ -1283,16 +1283,6 @@ function showPage(name) {
   if (title) title.textContent = page.title;
   if (desc) desc.textContent = page.description;
 
-  if (content) {
-    content.style.animation = 'none';
-    void content.offsetWidth;
-
-    content.innerHTML = page.content;
-
-    content.style.animation =
-      'smoothPageEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-  }
-
   history.replaceState(null, '', `#${pageName}`);
 
   // Unmount 3D globe if leaving overview
@@ -1304,48 +1294,6 @@ function showPage(name) {
   if (content && typeof page.render === 'function') {
     page.render(content);
   }
-}
-
-function showPage(name) {
-  appState.currentPage = pageRenderers[name] ? name : 'overview';
-  history.replaceState(null, '', `#${appState.currentPage}`);
-  renderCurrentPage();
-}
-
-async function loadBackendData() {
-  try {
-    const [healthRes, objRes, conjRes, weatherRes] = await Promise.all([
-      fetch('/health').then((r) => {
-        if (!r.ok) throw new Error(`Health status ${r.status}`);
-        return r.json();
-      }),
-      fetch('/api/v1/objects?limit=100').then((r) => {
-        if (!r.ok) throw new Error(`Objects status ${r.status}`);
-        return r.json();
-      }),
-      fetch('/api/v1/conjunctions').then((r) => {
-        if (!r.ok) throw new Error(`Conjunctions status ${r.status}`);
-        return r.json();
-      }),
-      fetch('/api/v1/weather').then((r) => (r.ok ? r.json() : null)).catch(() => null)
-    ]);
-
-    appState.health = healthRes;
-    appState.objects = objRes.objects || [];
-    appState.catalogSummary = objRes.summary || null;
-    appState.conjunctions = conjRes;
-    appState.events = conjRes.events || [];
-    appState.weather = weatherRes;
-    appState.isLoading = false;
-    appState.error = null;
-  } catch (err) {
-    appState.isLoading = false;
-    appState.error = err.message || 'Failed to connect to backend';
-    console.error('Failed to load mission data from backend:', err);
-  }
-
-  updateStatusIndicators();
-  renderCurrentPage();
 }
 
 document.addEventListener('click', (event) => {
@@ -1431,21 +1379,16 @@ function initLaunchRadar() {
   requestAnimationFrame(stepRadar);
 }
 
-// Initialize on DOM load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    initLaunchRadar();
-    showPage(location.hash.slice(1) || 'overview');
-  });
-} else {
+// Single Clean Application Initialization
+function initApp() {
   initLaunchRadar();
-  showPage(location.hash.slice(1) || 'overview');
-}
-// Initialize on page load
-window.addEventListener('DOMContentLoaded', () => {
   checkBackendHealth();
   setInterval(checkBackendHealth, 15000);
-});
+  showPage(location.hash.slice(1) || 'overview');
+}
 
-// Kick off initial page render
-showPage(location.hash.slice(1) || 'overview');
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
